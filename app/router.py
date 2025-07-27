@@ -7,7 +7,7 @@ Resources:
 
 """
 
-from fastapi import APIRouter
+# No replacement needed
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 

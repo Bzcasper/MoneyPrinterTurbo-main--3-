@@ -2,7 +2,7 @@ import os
 import sys
 from datetime import datetime
 
-import streamlit as st
+# No replacement needed
 from loguru import logger
 import requests
 
