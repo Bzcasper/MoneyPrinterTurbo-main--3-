@@ -58,14 +58,14 @@ def create_video(
     return create_task(request, body, stop_at="video")
 
 
-@router.post("/subtitle", response_model=TaskResponse, summary="Generate subtitle only")
+@router.post("/subtitles", response_model=TaskResponse, summary="Generate subtitle only")
 def create_subtitle(
     background_tasks: BackgroundTasks, request: Request, body: SubtitleRequest
 ):
     return create_task(request, body, stop_at="subtitle")
 
 
-@router.post("/audio", response_model=TaskResponse, summary="Generate audio only")
+@router.post("/audios", response_model=TaskResponse, summary="Generate audio only")
 def create_audio(
     background_tasks: BackgroundTasks, request: Request, body: AudioRequest
 ):
@@ -110,6 +110,7 @@ def get_all_tasks(
         "total": total,
         "page": page,
         "page_size": page_size,
+        "status": "success"
     }
     return utils.get_response(200, response)
 
@@ -155,7 +156,7 @@ def get_task(
         return utils.get_response(200, task)
 
     raise HttpException(
-        task_id=task_id, status_code=404, message=f"{request_id}: task not found"
+        task_id=task_id, status_code=404, message=f"{request_id}: task not found", status="failed"
     )
 
 
