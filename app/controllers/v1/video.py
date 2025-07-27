@@ -34,8 +34,8 @@ from app.utils import utils
 # router = new_router(dependencies=[Depends(base.verify_token)])
 router = new_router()
 
-_enable_redis = config.app.get("enable_redis", False)
-_redis_host = config.app.get("redis_host", "localhost")
+_enable_redis = config.app.get("enable_redis", True)
+_redis_host = config.app.get("redis_host", "redis")
 _redis_port = config.app.get("redis_port", 6379)
 _redis_db = config.app.get("redis_db", 0)
 _redis_password = config.app.get("redis_password", None)
