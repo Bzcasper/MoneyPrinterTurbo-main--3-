@@ -14,7 +14,9 @@ services:
     ports:
       - "8501:8501"
     command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
-    volumes: *common-volumes
+    volumes: 
+      - ./:/MoneyPrinterTurbo:rw
+      - ./storage:/MoneyPrinterTurbo/storage:rw
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
@@ -35,7 +37,9 @@ services:
     ports:
       - "8080:8080"
     command: [ "python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080" ]
-    volumes: *common-volumes
+    volumes: 
+      - ./:/MoneyPrinterTurbo:rw
+      - ./storage:/MoneyPrinterTurbo/storage:rw
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
