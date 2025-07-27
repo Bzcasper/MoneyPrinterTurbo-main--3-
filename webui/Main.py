@@ -94,7 +94,8 @@ with st.sidebar:
     
     # Health check
     try:
-        health_response = requests.get("http://localhost:8080/ping", timeout=2)
+        # Use service name 'api' instead of localhost for Docker container communication
+        health_response = requests.get("http://api:8080/ping", timeout=2)
         if health_response.status_code == 200:
             st.success("✅ Service Healthy")
             health_data = health_response.json()
