@@ -1,0 +1,17 @@
+{
+  "name": "Turbo-Pro-Empire-Milestones",
+  "parallel": true,
+  "maxConcurrency": 8,
+  "tasks": [
+    { "id": "codec-matrix",        "type": "analyze",   "description": "Generate QSV/NVENC/VAAPI auto-detection matrix" },
+    { "id": "voice-clone",         "type": "build",     "description": "GPT-SoVITS voice cloning micro-service" },
+    { "id": "subtitle-sync",       "type": "integrate", "description": "AI subtitle alignment with Whisper-large-v3" },
+    { "id": "gpu-engine",          "type": "implement", "description": "CUDA/Metal fallback engine for effects" },
+    { "id": "youtube-uploader",    "type": "integrate", "description": "YouTube API v3 OAuth2 auto-upload" },
+    { "id": "tiktok-api",          "type": "integrate", "description": "TikTok Creator API short-form upload" },
+    { "id": "i18n-pipeline",       "type": "build",     "description": "Auto-translate video templates (EN→CN→ES)" },
+    { "id": "security-scan",       "type": "audit",     "description": "ImageMagick & FFmpeg CVE audit" },
+    { "id": "cost-model",          "type": "analyze",   "description": "Cloud vs on-prem cost calculator" },
+    { "id": "metrics-dashboard",   "type": "implement", "description": "Prometheus + Grafana dashboard" }
+  ]
+}

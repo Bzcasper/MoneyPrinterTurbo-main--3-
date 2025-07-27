@@ -1,0 +1,33 @@
+{
+  "name": "MoneyPrinterTurbo Dev Container",
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": "pip3 install --no-cache-dir -r requirements.txt && npm install -g npm",
+  "forwardPorts": [8501],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "editor.formatOnSave": true,
+        "python.pythonPath": "/usr/bin/python3",
+        "python.languageServer": "Pylance"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "njpwerner.autodocstring",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    },
+    "codespaces": {
+      "features": {
+        "node": "latest"
+      }
+    }
+  },
+  "remoteUser": "root"
+}

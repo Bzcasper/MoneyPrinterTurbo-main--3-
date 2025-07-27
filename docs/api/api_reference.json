@@ -1,0 +1,854 @@
+MoneyPrinterTurbo
+ 1.2.6 
+OAS 3.1
+/openapi.json
+https://github.com/harry0703/MoneyPrinterTurbo
+
+V1
+
+
+POST
+/api/v1/videos
+Generate a short video
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "video_subject": "string",
+  "video_script": "",
+  "video_terms": "string",
+  "video_aspect": "9:16",
+  "video_concat_mode": "random",
+  "video_transition_mode": "None",
+  "video_clip_duration": 5,
+  "video_count": 1,
+  "video_source": "pexels",
+  "video_materials": [
+    {
+      "provider": "pexels",
+      "url": "",
+      "duration": 0
+    }
+  ],
+  "video_language": "",
+  "voice_name": "",
+  "voice_volume": 1,
+  "voice_rate": 1,
+  "bgm_type": "random",
+  "bgm_file": "",
+  "bgm_volume": 0.2,
+  "subtitle_enabled": true,
+  "subtitle_position": "bottom",
+  "custom_position": 70,
+  "font_name": "STHeitiMedium.ttc",
+  "text_fore_color": "#FFFFFF",
+  "text_background_color": true,
+  "font_size": 60,
+  "stroke_color": "#000000",
+  "stroke_width": 1.5,
+  "n_threads": 2,
+  "paragraph_number": 1
+}
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "task_id": "6c85c8cc-a77a-42b9-bc30-947815aa0558"
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+POST
+/api/v1/subtitle
+Generate subtitle only
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "video_script": "string",
+  "video_language": "",
+  "voice_name": "zh-CN-XiaoxiaoNeural-Female",
+  "voice_volume": 1,
+  "voice_rate": 1.2,
+  "bgm_type": "random",
+  "bgm_file": "",
+  "bgm_volume": 0.2,
+  "subtitle_position": "bottom",
+  "font_name": "STHeitiMedium.ttc",
+  "text_fore_color": "#FFFFFF",
+  "text_background_color": true,
+  "font_size": 60,
+  "stroke_color": "#000000",
+  "stroke_width": 1.5,
+  "video_source": "local",
+  "subtitle_enabled": "true"
+}
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "task_id": "6c85c8cc-a77a-42b9-bc30-947815aa0558"
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+POST
+/api/v1/audio
+Generate audio only
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "video_script": "string",
+  "video_language": "",
+  "voice_name": "zh-CN-XiaoxiaoNeural-Female",
+  "voice_volume": 1,
+  "voice_rate": 1.2,
+  "bgm_type": "random",
+  "bgm_file": "",
+  "bgm_volume": 0.2,
+  "video_source": "local"
+}
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "task_id": "6c85c8cc-a77a-42b9-bc30-947815aa0558"
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+GET
+/api/v1/tasks
+Get all tasks
+
+Parameters
+Try it out
+Name	Description
+page
+integer
+(query)
+Default value : 1
+
+1
+minimum: 1
+page_size
+integer
+(query)
+Default value : 10
+
+10
+minimum: 1
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "combined_videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/combined-1.mp4"
+    ],
+    "progress": 100,
+    "state": 1,
+    "videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/final-1.mp4"
+    ]
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+GET
+/api/v1/tasks/{task_id}
+Query task status
+
+Parameters
+Try it out
+Name	Description
+task_id *
+string
+(path)
+Task ID
+
+task_id
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "combined_videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/combined-1.mp4"
+    ],
+    "progress": 100,
+    "state": 1,
+    "videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/final-1.mp4"
+    ]
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+DELETE
+/api/v1/tasks/{task_id}
+Delete a generated short video task
+
+Parameters
+Try it out
+Name	Description
+task_id *
+string
+(path)
+Task ID
+
+task_id
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "combined_videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/combined-1.mp4"
+    ],
+    "progress": 100,
+    "state": 1,
+    "videos": [
+      "http://127.0.0.1:8080/tasks/6c85c8cc-a77a-42b9-bc30-947815aa0558/final-1.mp4"
+    ]
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+GET
+/api/v1/musics
+Retrieve local BGM files
+
+Parameters
+Try it out
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "files": [
+      {
+        "file": "/MoneyPrinterTurbo/resource/songs/output013.mp3",
+        "name": "output013.mp3",
+        "size": 1891269
+      }
+    ]
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+
+POST
+/api/v1/musics
+Upload the BGM file to the songs directory
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+multipart/form-data
+file *
+string($binary)
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "file": "/MoneyPrinterTurbo/resource/songs/example.mp3"
+  },
+  "message": "success",
+  "status": 200
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+GET
+/api/v1/stream/{file_path}
+Stream Video
+
+Parameters
+Try it out
+Name	Description
+file_path *
+string
+(path)
+dead_path
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+"string"
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No links
+
+GET
+/api/v1/download/{file_path}
+Download Video
+
+video download :param _: Request request :param file_path: video file path, eg: /cd1727ed-3473-42a2-a7da-4faafafec72b/final-1.mp4 :return: video file
+
+Parameters
+Try it out
+Name	Description
+dead_path *
+string
+(path)
+dead_path
+Answers
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Cry
+"string"
+No tins
+422	
+Error validation
+
+Media type
+
+application/json
+Example Value
+Cry
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No tins
+
+POST
+/api/v1/scripts
+Create a script for the video
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Cry
+{
+  "video_subject": "春天的花海",
+  "video_language": "",
+  "paragraph_number": 1
+}
+Answers
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Cry
+{
+  "data": {
+    "video_script": "春天的花海，是大自然的一幅美丽画卷。在这个季节里，大地复苏，万物生长，花朵争相绽放，形成了一片五彩斑斓的花海..."
+  },
+  "message": "success",
+  "status": 200
+}
+No tins
+422	
+Error validation
+
+Media type
+
+application/json
+Example Value
+Cry
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No tins
+
+POST
+/api/v1/terms
+Generate video terms based on the video script
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Cry
+{
+  "video_subject": "春天的花海",
+  "video_script": "春天的花海，如诗如画般展现在眼前。万物复苏的季节里，大地披上了一袭绚丽多彩的盛装。金黄的迎春、粉嫩的樱花、洁白的梨花、艳丽的郁金香……",
+  "amount": 5
+}
+Answers
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Cry
+{
+  "data": {
+    "video_terms": [
+      "sky",
+      "tree"
+    ]
+  },
+  "message": "success",
+  "status": 200
+}
+No tins
+422	
+Error validation
+
+Media type
+
+application/json
+Example Value
+Cry
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+No tins
+
+Schemas
+AudioRequestCollapse allobject
+video_scriptstring
+video_languageExpand all(string | null)
+voice_nameExpand all(string | null)
+voice_volumeExpand all(number | null)
+voice_rateExpand all(number | null)
+bgm_typeExpand all(string | null)
+bgm_fileExpand all(string | null)
+bgm_volumeExpand all(number | null)
+video_sourceExpand all(string | null)
+BgmRetrieveResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+BgmUploadResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+Body_upload_bgm_file_api_v1_musics_postExpand allobject
+HTTPValidationErrorCollapse allobject
+detailExpand allarray<object>
+MaterialInfoCollapse allobject
+providerExpand allstring
+urlExpand allstring
+durationExpand allinteger
+SubtitleRequestCollapse allobject
+video_scriptstring
+video_languageExpand all(string | null)
+voice_nameExpand all(string | null)
+voice_volumeExpand all(number | null)
+voice_rateExpand all(number | null)
+bgm_typeExpand all(string | null)
+bgm_fileExpand all(string | null)
+bgm_volumeExpand all(number | null)
+subtitle_positionExpand all(string | null)
+font_nameExpand all(string | null)
+text_fore_colorExpand all(string | null)
+text_background_colorExpand all(boolean | string)
+font_sizeExpand allinteger
+stroke_colorExpand all(string | null)
+stroke_widthExpand allnumber
+video_sourceExpand all(string | null)
+subtitle_enabledExpand all(string | null)
+TaskDelectionResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+TaskQueryResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+TaskResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataExpand allobject
+ExampleExpand allobject
+TaskResponseDataCollapse allobject
+task_idstring
+TaskVideoRequestCollapse allobject
+video_subjectstring
+video_scriptExpand allstring
+video_termsExpand all(string | array<any> | null)
+video_aspectExpand all(string | null)
+video_concat_fashionExpand all(string | null)
+video_transition_modeExpand all(string | null)
+video_clip_durationExpand all(integration | null)
+video_countExpand all(integration | null)
+video_sourceExpand all(string | null)
+video_materialsExpand all(array<object> | null)
+video_languageExpand all(string | null)
+voice_nameExpand all(string | null)
+voice_volumeExpand all(number | null)
+voice_rateExpand all(number | null)
+bgm_typeExpand all(string | null)
+bgm_fileExpand all(string | null)
+bgm_volumeExpand all(number | null)
+subtitle_enabledExpand all(boolean | null)
+subtitle_positionExpand all(string | null)
+custom_positionExpand allnumber
+font_nameExpand all(string | null)
+text_fore_colorExpand all(string | null)
+text_background_colorExpand all(boolean | string)
+font_sizeExpand allinteger
+stroke_colorExpand all(string | null)
+stroke_widthExpand allnumber
+n_threadsExpand all(integration | null)
+paragraph_numberExpand all(integration | null)
+ValidationErrorCollapse allobject
+locExpand allarray<(string | intestger)>
+msgstring
+typestring
+VideoAspectCollapse allstring
+OneCollapse allarray
+#0"16:9"
+#1"9:16"
+#2"1:1"
+VideoConcatModeCollapse allstring
+OneExpand allarray
+VideoScriptRequestCollapse allobject
+video_subjectExpand all(string | null)
+video_languageExpand all(string | null)
+paragraph_numberExpand all(integration | null)
+VideoScriptResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+VideoTermsRequestCollapse allobject
+video_subjectExpand all(string | null)
+video_scriptExpand all(string | null)
+amountExpand all(integration | null)
+VideoTermsResponseCollapse allobject
+stateExpand allinteger
+messageExpand all(string | null)
+dataany
+ExampleExpand allobject
+VideoTransitionModeCollapse allstring
+OneExpand allarray

@@ -1,0 +1,48 @@
+version: '3.8'
+
+x-common-volumes: &common-volumes
+  - ./:/MoneyPrinterTurbo:rw
+  - ./storage:/MoneyPrinterTurbo/storage:rw
+
+services:
+  webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: moneyprinterturbo-webui:latest
+    container_name: moneyprinterturbo-webui-new
+    ports:
+      - "8501:8501"
+    command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
+    volumes: *common-volumes
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/MoneyPrinterTurbo
+      - HOST=0.0.0.0
+      - PORT=8501
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: moneyprinterturbo-api:latest
+    container_name: moneyprinterturbo-api-new
+    ports:
+      - "8080:8080"
+    command: [ "python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080" ]
+    volumes: *common-volumes
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/MoneyPrinterTurbo
+      - HOST=0.0.0.0
+      - PORT=8080
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
