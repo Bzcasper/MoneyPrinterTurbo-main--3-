@@ -1,95 +1,343 @@
+# ==================================================================
+# COMPREHENSIVE .GITIGNORE FOR MONEYPRINTERTURBO PROJECT
+# ==================================================================
+
 # System files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+*~
+
+# Temporary files
 *.tmp
+*.temp
 *.swp
 *.swo
+*~
+.#*
 
-# Environment and configuration files
-/config.toml
-credentials.env
-.env
-.env.*
+# ==================================================================
+# PYTHON
+# ==================================================================
 
-# Storage and cache directories
-/storage/
-/.idea/
-.vscode/
-.pytest_cache/
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*/__pycache__/
-**/__pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 
-# Development tools
-.roo/
-.roomodes
-.aider.*
-.memory/
+# C extensions
+*.so
 
-# Logs and databases
-logs/
-*.log
-*.db
-PROGRESS.db
-PROGRESS.sql
-progress.db
-
-# Build outputs
-/models/
-./models/*
-node_modules/
-dist/
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# VuePress files
-/sites/docs/.vuepress/.temp
-/sites/docs/.vuepress/.cache
-/sites/docs/.vuepress/dist
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
 
 # Virtual environments
 venv/
 .venv/
 env/
 .env/
+ENV/
+env.bak/
+venv.bak/
 
-# Generated videos and temporary files
+# ==================================================================
+# ENVIRONMENT AND CONFIGURATION
+# ==================================================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+credentials.env
+/config.toml
+config.mcp.toml
+
+# Secrets and API keys
+secrets.json
+*.key
+*.pem
+*.p12
+.secrets/
+
+# ==================================================================
+# DEVELOPMENT TOOLS
+# ==================================================================
+
+# IDEs and editors
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Development and debugging
+.roo/
+.roomodes
+.memory/
+
+# AI Development Tools (Comprehensive)
+.aider.*
+.aider/
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.*
+.aider.*.md
+aider.*
+
+# Claude AI Tools
+.claude/
+claude-flow-data.json
+claude.json
+.claude-*
+
+# Other AI Tools
+.cursor/
+.copilot/
+.codex/
+.openai/
+.anthropic/
+.ai-tools/
+
+# ==================================================================
+# DATABASES
+# ==================================================================
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+PROGRESS.db
+PROGRESS.sql
+progress.db
+
+# ==================================================================
+# LOGS
+# ==================================================================
+
+# Log files
+logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ==================================================================
+# NODE.JS / JAVASCRIPT
+# ==================================================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production builds
+dist/
+build/
+
+# npm / yarn
+.npm
+.eslintcache
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ==================================================================
+# MEDIA AND ASSETS
+# ==================================================================
+
+# Generated videos and media
 final-*.mp4
 test_*.mp4
 *.temp
 temp/
 
-# IDE and editor files
-.vscode/
-.idea/
-*.code-workspace
+# Large media files (uncomment if needed)
+# *.mp4
+# *.avi
+# *.mov
+# *.wmv
+# *.flv
+# *.webm
 
-# Cloud and deployment
+# Audio files (if temporary)
+# *.mp3
+# *.wav
+# *.ogg
+
+# Image files (if temporary)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.tiff
+
+# PostScript and vector files that conflict with Python modules
+*.ps
+*.eps
+
+# ==================================================================
+# CLOUD AND DEPLOYMENT
+# ==================================================================
+
+# Cloud deployment
 .cloud/
 deployment.log
 
-# Test files
-test_*.py
-*_test.py
+# Docker
+.dockerignore
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# ==================================================================
+# AI AND ML TOOLS
+# ==================================================================
 
 # MCP and AI tool files
 .mcp.json
-config.mcp.toml
 claude-flow.config.json
 .claude/
 .swarm/
 .hive-mind/
 
-# PostScript and image files that are incorrectly named as modules
-*.ps
-*.eps
-*.ai
-*.svg
+# AI-generated files
+hive-mind-prompt-*.txt
+
+# Model files (uncomment if models should not be tracked)
+/models/
+./models/*
+
+# ==================================================================
+# TESTING
+# ==================================================================
+
+# Test files (if they shouldn't be tracked)
+test_*.py
+*_test.py
+
+# ==================================================================
+# BACKUP AND ARCHIVE
+# ==================================================================
+
+# Backup directories
+backup_*/
+postscript_backup*/
+*_backup/
+*.backup
+*.bak
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ==================================================================
+# MEMORY AND COORDINATION DATA
+# ==================================================================
+
+# Memory and coordination data files
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+
+# ==================================================================
+# PROJECT SPECIFIC
+# ==================================================================
 
 # Specific PostScript files that conflict with Python module names
-# (These appear to be generated by ImageMagick and incorrectly named)
 /asyncio
 /json
 /os
@@ -101,27 +349,22 @@ claude-flow.config.json
 /uvicorn
 /websockets
 
-# But keep legitimate CLI tools (NOT these files - they're important!)
-# claude-flow
-# claude-flow.bat  
-# claude-flow.ps1
-# Memory and coordination data files
-memory/claude-flow-data.json
-memory/sessions/*
-!memory/sessions/README.md
-memory/agents/*
-!memory/agents/README.md
-coordination/memory_bank/*
-coordination/subtasks/*
-coordination/orchestration/*
+# Storage and cache directories
+/storage/
 
-# Database files
-*.db
-*.db-journal
-*.db-wal
-*.sqlite
-*.sqlite-journal
-*.sqlite-wal
+# VuePress build output
+/sites/docs/.vuepress/.temp
+/sites/docs/.vuepress/.cache
+/sites/docs/.vuepress/dist
 
-# Hive mind generated files
-hive-mind-prompt-*.txt
+# ==================================================================
+# IMPORTANT CLI TOOLS (DO NOT IGNORE)
+# ==================================================================
+
+# Keep these important CLI tools
+!claude-flow
+!claude-flow.bat  
+!claude-flow.ps1
+
+# Keep important config examples
+!config.mcp.example.toml
