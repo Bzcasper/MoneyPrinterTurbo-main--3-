@@ -39,6 +39,14 @@ from app.models.schema import (
 from app.services.utils import video_effects
 from app.utils import utils
 
+# Import Enhanced Codec Optimizer
+from app.services.codec import (
+    enhanced_codec_optimizer,
+    ContentType,
+    QualityTarget,
+    OptimizationRequest
+)
+
 
 def validate_video_file(file_path: str) -> bool:
     """

@@ -18,8 +18,8 @@
 
   "configuration": {
     "neural_enhancement": {
-      "max_agents": 10,
-      "parallel_streams": 6,
+      "max_agents": 6,
+      "parallel_streams": 4,
       "ai_upscaling": true,
       "quality_enhancement": true,
       "noise_reduction": true,
@@ -48,7 +48,7 @@
       "role": "Orchestrate AI-powered video enhancement pipeline",
       "responsibilities": [
         "Initialize neural pattern training",
-        "Coordinate 10-agent hive mind",
+        "Coordinate 6-agent optimized swarm",
         "Manage SQLite storage operations",
         "Monitor enhancement quality metrics",
         "Adaptive performance optimization"
@@ -389,7 +389,7 @@
     "decision_algorithm": "weighted_consensus",
     "learning_strategy": "collective_intelligence",
     "memory_storage": "persistent_sqlite",
-    "max_agents": 10,
+    "max_agents": 6,
     "coordination_frequency": 5,
     "pattern_sharing": true
   },
