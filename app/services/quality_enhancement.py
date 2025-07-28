@@ -34,6 +34,14 @@ import ffmpeg
 from app.models.schema import VideoParams
 from app.services.video import MemoryMonitor, close_clip, codec_optimizer
 
+# Neural training imports
+try:
+    from app.services.neural_training.model_integration import get_neural_processor
+    NEURAL_MODELS_AVAILABLE = True
+except ImportError:
+    NEURAL_MODELS_AVAILABLE = False
+    logger.warning("Neural models not available - falling back to traditional enhancement")
+
 
 class QualityEnhancementConfig:
     """Configuration for quality enhancement operations"""
@@ -64,6 +72,12 @@ class QualityEnhancementConfig:
         self.currency_detail_enhancement = True
         self.metallic_surface_optimization = True
         self.text_legibility_boost = True
+        
+        # Neural enhancement settings
+        self.use_neural_models = NEURAL_MODELS_AVAILABLE
+        self.neural_upscaling = True
+        self.neural_quality_enhancement = True
+        self.neural_fallback_enabled = True  # Fallback to traditional methods if neural fails
 
 
 class VideoQualityEnhancer:
@@ -78,6 +92,16 @@ class VideoQualityEnhancer:
             'quality_improvements': {},
             'memory_usage': []
         }
+        
+        # Initialize neural processor if available
+        self.neural_processor = None
+        if self.config.use_neural_models and NEURAL_MODELS_AVAILABLE:
+            try:
+                self.neural_processor = get_neural_processor()
+                logger.info("Neural video processor initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize neural processor: {e}")
+                self.neural_processor = None
     
     def enhance_video(self, input_path: str, output_path: str, params: VideoParams) -> Dict:
         """

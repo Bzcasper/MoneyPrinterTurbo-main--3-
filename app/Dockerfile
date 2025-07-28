@@ -39,9 +39,8 @@ RUN useradd -m -u 1000 appuser && \
 # Copy requirements first for better caching
 COPY requirements.txt ./
 
-# Install Python dependencies (including specific Streamlit version if not in requirements.txt)
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir streamlit==1.32.2
+# Install Python dependencies (use streamlit version from requirements.txt)
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .

@@ -1,0 +1,52 @@
+{
+  "name": "@moneyprinter/mcp-client",
+  "version": "1.0.0",
+  "description": "TypeScript/JavaScript client SDK for MoneyPrinterTurbo MCP server",
+  "main": "dist/mcp-client.js",
+  "types": "dist/mcp-client.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "video-generation",
+    "ai",
+    "websocket"
+  ],
+  "author": "MoneyPrinterTurbo Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.14.0"
+  },
+  "peerDependencies": {
+    "@types/ws": "^8.5.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harry0703/MoneyPrinterTurbo.git",
+    "directory": "app/mcp/clients/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/harry0703/MoneyPrinterTurbo/issues"
+  },
+  "homepage": "https://github.com/harry0703/MoneyPrinterTurbo#readme"
+}
