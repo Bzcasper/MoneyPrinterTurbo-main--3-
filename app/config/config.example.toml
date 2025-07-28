@@ -207,6 +207,36 @@ speech_region = ""
 # Get your API key at https://siliconflow.cn
 api_key = ""
 
+[google_tts]
+# Google Cloud Text-to-Speech API Settings
+# Get your API key from: https://console.cloud.google.com/apis/credentials
+# Set the path to your service account JSON file
+api_key = ""
+# Project ID (optional, will be read from credentials)
+project_id = ""
+# Request timeout in seconds
+timeout = 30
+# Supported audio encoding: MP3, WAV, OGG_OPUS
+audio_encoding = "MP3"
+# Sample rate (8000-48000 Hz)
+sample_rate = 24000
+
+[characterbox]
+# CharacterBox AI Character Generation Settings
+# Get your API key from: https://characterbox.ai/api
+api_key = ""
+# Base URL for CharacterBox API
+base_url = "https://api.characterbox.ai/v1"
+# Request timeout in seconds
+timeout = 30
+# Default character style
+default_style = "realistic"
+# Default image dimensions
+default_width = 512
+default_height = 768
+# Quality settings: "standard", "high", "ultra"
+default_quality = "high"
+
 [gpt_sovits]
 # GPT-SoVITS Voice Synthesis Settings
 # GPT-SoVITS API服务地址

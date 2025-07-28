@@ -75,6 +75,67 @@ def get_siliconflow_voices() -> list[str]:
     ]
 
 
+def get_google_tts_voices() -> list[str]:
+    """
+    获取 Google TTS 的声音列表
+    Returns:
+        声音列表，格式为 ["google-tts:lang:voice-gender", ...]
+    """
+    # Google TTS 支持的主要语言和声音
+    google_voices = [
+        # English voices
+        ("en-US", "en-US-Wavenet-A", "Female", "US English - Natural"),
+        ("en-US", "en-US-Wavenet-B", "Male", "US English - Natural"),
+        ("en-US", "en-US-Wavenet-C", "Female", "US English - Natural"),
+        ("en-US", "en-US-Wavenet-D", "Male", "US English - Natural"),
+        ("en-US", "en-US-Standard-A", "Female", "US English - Standard"),
+        ("en-US", "en-US-Standard-B", "Male", "US English - Standard"),
+        ("en-US", "en-US-Standard-C", "Female", "US English - Standard"),
+        ("en-US", "en-US-Standard-D", "Male", "US English - Standard"),
+        ("en-GB", "en-GB-Wavenet-A", "Female", "UK English - Natural"),
+        ("en-GB", "en-GB-Wavenet-B", "Male", "UK English - Natural"),
+        ("en-GB", "en-GB-Standard-A", "Female", "UK English - Standard"),
+        ("en-GB", "en-GB-Standard-B", "Male", "UK English - Standard"),
+        
+        # Chinese voices
+        ("zh-CN", "zh-CN-Wavenet-A", "Female", "普通话 - 自然"),
+        ("zh-CN", "zh-CN-Wavenet-B", "Male", "普通话 - 自然"),
+        ("zh-CN", "zh-CN-Wavenet-C", "Male", "普通话 - 自然"),
+        ("zh-CN", "zh-CN-Standard-A", "Female", "普通话 - 标准"),
+        ("zh-CN", "zh-CN-Standard-B", "Male", "普通话 - 标准"),
+        ("zh-CN", "zh-CN-Standard-C", "Male", "普通话 - 标准"),
+        
+        # Spanish voices
+        ("es-ES", "es-ES-Wavenet-A", "Female", "Spanish - Natural"),
+        ("es-ES", "es-ES-Wavenet-B", "Male", "Spanish - Natural"),
+        ("es-ES", "es-ES-Standard-A", "Female", "Spanish - Standard"),
+        ("es-ES", "es-ES-Standard-B", "Male", "Spanish - Standard"),
+        
+        # French voices
+        ("fr-FR", "fr-FR-Wavenet-A", "Female", "French - Natural"),
+        ("fr-FR", "fr-FR-Wavenet-B", "Male", "French - Natural"),
+        ("fr-FR", "fr-FR-Standard-A", "Female", "French - Standard"),
+        ("fr-FR", "fr-FR-Standard-B", "Male", "French - Standard"),
+        
+        # German voices
+        ("de-DE", "de-DE-Wavenet-A", "Female", "German - Natural"),
+        ("de-DE", "de-DE-Wavenet-B", "Male", "German - Natural"),
+        ("de-DE", "de-DE-Standard-A", "Female", "German - Standard"),
+        ("de-DE", "de-DE-Standard-B", "Male", "German - Standard"),
+        
+        # Japanese voices
+        ("ja-JP", "ja-JP-Wavenet-A", "Female", "日本語 - 自然"),
+        ("ja-JP", "ja-JP-Wavenet-B", "Female", "日本語 - 自然"),
+        ("ja-JP", "ja-JP-Wavenet-C", "Male", "日本語 - 自然"),
+        ("ja-JP", "ja-JP-Standard-A", "Female", "日本語 - 標準"),
+        ("ja-JP", "ja-JP-Standard-B", "Female", "日本語 - 標準"),
+        ("ja-JP", "ja-JP-Standard-C", "Male", "日本語 - 標準"),
+    ]
+    
+    # 格式化为显示名称
+    return [f"google-tts:{lang}:{voice}-{gender}-{desc}" for lang, voice, gender, desc in google_voices]
+
+
 def get_all_azure_voices(filter_locals=None) -> list[str]:
     azure_voices_str = """
 Name: af-ZA-AdriNeural
@@ -1115,6 +1176,11 @@ def is_gpt_sovits_voice(voice_name: str):
     return voice_name.startswith("gpt-sovits:")
 
 
+def is_google_tts_voice(voice_name: str):
+    """检查是否是Google TTS的声音"""
+    return voice_name.startswith("google-tts:")
+
+
 def tts(
     text: str,
     voice_name: str,
@@ -1124,6 +1190,21 @@ def tts(
 ) -> Union[SubMaker, None]:
     if is_azure_v2_voice(voice_name):
         return azure_tts_v2(text, voice_name, voice_file)
+    elif is_google_tts_voice(voice_name):
+        # 从voice_name中提取语言和声音
+        # 格式: google-tts:lang:voice-Gender-Description
+        parts = voice_name.split(":")
+        if len(parts) >= 3:
+            language_code = parts[1]
+            # 提取voice信息，例如 "en-US-Wavenet-A-Female-US English - Natural" -> "en-US-Wavenet-A"
+            voice_info = parts[2]
+            voice = voice_info.split("-")[0] + "-" + voice_info.split("-")[1] + "-" + voice_info.split("-")[2] + "-" + voice_info.split("-")[3]
+            return google_tts(
+                text, language_code, voice, voice_rate, voice_file, voice_volume
+            )
+        else:
+            logger.error(f"Invalid google-tts voice name format: {voice_name}")
+            return None
     elif is_gpt_sovits_voice(voice_name):
         # 从voice_name中提取模型和声音
         # 格式: gpt-sovits:model:voice-Gender-Description
@@ -1504,6 +1585,149 @@ def gpt_sovits_tts(
         except Exception as e:
             logger.error(f"gpt-sovits tts failed: {str(e)}")
 
+    return None
+
+
+def google_tts(
+    text: str,
+    language_code: str,
+    voice_name: str,
+    voice_rate: float,
+    voice_file: str,
+    voice_volume: float = 1.0,
+) -> Union[SubMaker, None]:
+    """
+    使用 Google Cloud Text-to-Speech API 生成语音
+    
+    Args:
+        text: 要转换为语音的文本
+        language_code: 语言代码，如 "en-US", "zh-CN"
+        voice_name: 声音名称，如 "en-US-Wavenet-A"
+        voice_rate: 语音速度，范围[0.25, 4.0]
+        voice_file: 输出的音频文件路径
+        voice_volume: 语音音量，范围[0.0, 2.0]，Google TTS中对应 volume_gain_db 范围[-96.0, 16.0]
+        
+    Returns:
+        SubMaker对象或None
+    """
+    text = text.strip()
+    
+    # 检查Google TTS配置
+    google_api_key = config.google_tts.get("api_key", "")
+    if not google_api_key:
+        logger.error("Google TTS API key is not set")
+        return None
+    
+    try:
+        # 导入Google Cloud TTS库
+        from google.cloud import texttospeech
+        import os
+        
+        # 设置API密钥环境变量
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = google_api_key
+        
+        # 创建客户端
+        client = texttospeech.TextToSpeechClient()
+        
+        # 构建语音合成请求
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+        
+        # 配置语音参数
+        voice = texttospeech.VoiceSelectionParams(
+            language_code=language_code,
+            name=voice_name
+        )
+        
+        # 将voice_volume转换为volume_gain_db
+        # voice_volume范围[0.0, 2.0] -> volume_gain_db范围[-96.0, 16.0]
+        if voice_volume <= 0:
+            volume_gain_db = -96.0
+        else:
+            # 对数转换
+            import math
+            volume_gain_db = 20 * math.log10(voice_volume)
+            volume_gain_db = max(-96.0, min(16.0, volume_gain_db))
+        
+        # 配置音频参数
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3,
+            speaking_rate=voice_rate,
+            volume_gain_db=volume_gain_db,
+            sample_rate_hertz=24000
+        )
+        
+        for i in range(3):  # 尝试3次
+            try:
+                logger.info(f"start google tts, voice: {voice_name}, language: {language_code}, try: {i + 1}")
+                
+                # 执行语音合成
+                response = client.synthesize_speech(
+                    input=synthesis_input, voice=voice, audio_config=audio_config
+                )
+                
+                # 保存音频文件
+                with open(voice_file, "wb") as f:
+                    f.write(response.audio_content)
+                
+                # 创建SubMaker对象
+                sub_maker = SubMaker()
+                
+                # 获取音频文件的实际长度
+                try:
+                    from moviepy import AudioFileClip
+                    
+                    audio_clip = AudioFileClip(voice_file)
+                    audio_duration = audio_clip.duration
+                    audio_clip.close()
+                    
+                    # 将音频长度转换为100纳秒单位（与edge_tts兼容）
+                    audio_duration_100ns = int(audio_duration * 10000000)
+                    
+                    # 使用文本分割来创建更准确的字幕
+                    sentences = utils.split_string_by_punctuations(text)
+                    
+                    if sentences:
+                        # 计算每个句子的大致时长（按字符数比例分配）
+                        total_chars = sum(len(s) for s in sentences)
+                        char_duration = audio_duration_100ns / total_chars if total_chars > 0 else 0
+                        
+                        current_offset = 0
+                        for sentence in sentences:
+                            if not sentence.strip():
+                                continue
+                            
+                            # 计算当前句子的时长
+                            sentence_chars = len(sentence)
+                            sentence_duration = int(sentence_chars * char_duration)
+                            
+                            # 添加到SubMaker
+                            sub_maker.subs.append(sentence)
+                            sub_maker.offset.append((current_offset, current_offset + sentence_duration))
+                            
+                            # 更新偏移量
+                            current_offset += sentence_duration
+                    else:
+                        # 如果无法分割，则使用整个文本作为一个字幕
+                        sub_maker.subs = [text]
+                        sub_maker.offset = [(0, audio_duration_100ns)]
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to create accurate subtitles: {str(e)}")
+                    # 回退到简单的字幕
+                    sub_maker.subs = [text]
+                    sub_maker.offset = [(0, 10000000)]  # 假设10秒
+                
+                logger.success(f"google tts succeeded: {voice_file}")
+                return sub_maker
+                
+            except Exception as e:
+                logger.error(f"google tts failed: {str(e)}")
+                
+    except ImportError:
+        logger.error("Google Cloud Text-to-Speech library not installed. Please install: pip install google-cloud-texttospeech")
+    except Exception as e:
+        logger.error(f"Google TTS initialization failed: {str(e)}")
+    
     return None
 
 

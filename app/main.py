@@ -9,6 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.router import root_api_router, configure_cors
 from app.models.exception import HttpException
 from app.middleware import RateLimitMiddleware
+from app.middleware.supabase_middleware import SupabaseMiddleware
 # Create FastAPI app with enhanced configuration
 app = FastAPI(
     title="MoneyPrinterTurbo API",
@@ -36,6 +37,21 @@ try:
 except Exception as e:
     logger.warning(f"Rate limiting setup failed: {e}, using memory-based rate limiting")
     app.add_middleware(RateLimitMiddleware)
+
+# Add Supabase middleware for database connection and authentication
+try:
+    # Enable authentication and logging for Supabase middleware
+    enable_auth = os.getenv("SUPABASE_ENABLE_AUTH", "true").lower() == "true"
+    enable_logging = os.getenv("SUPABASE_ENABLE_LOGGING", "true").lower() == "true"
+    
+    app.add_middleware(
+        SupabaseMiddleware,
+        enable_auth=enable_auth,
+        enable_logging=enable_logging
+    )
+    logger.info("Supabase middleware added successfully")
+except Exception as e:
+    logger.warning(f"Supabase middleware setup failed: {e}")
 
 # Configure CORS and include all API routers
 configure_cors(app)

@@ -1,0 +1,27 @@
+[browser]
+gatherUsageStats = false
+[app]
+# MCP Server Settings
+mcp_server_host = "localhost"
+mcp_server_port = 8081
+mcp_max_connections = 100
+mcp_rate_limit_requests = 100
+mcp_rate_limit_window = 60
+
+# Authentication
+mcp_jwt_secret = "your-secret-key"
+mcp_jwt_expiration = 3600
+
+# API Keys
+[app.mcp_api_keys]
+admin_key = { name = "Admin User", role = "admin", active = true }
+user_key = { name = "Regular User", role = "user", active = true }
+
+# Circuit Breaker
+mcp_circuit_breaker_threshold = 5
+mcp_circuit_breaker_timeout = 60
+
+# Service Discovery
+mcp_heartbeat_interval = 30
+mcp_health_check_interval = 10
+mcp_service_timeout = 90

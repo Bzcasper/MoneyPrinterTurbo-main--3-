@@ -1,5 +1,10 @@
-# Exclude common Python files and directories
-venv/
+# Version control and git files
+.git/
+.gitignore
+.github/
+.svn/
+
+# Python cache and compiled files
 __pycache__/
 *.pyc
 *.pyo
@@ -8,16 +13,102 @@ __pycache__/
 *.pyw
 *.pyi
 *.egg-info/
+.pytest_cache/
 
-# Exclude development and local files
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Development and local files
 .env
 .env.*
 *.log
 *.db
+PROGRESS.db
+PROGRESS.sql
+progress.db
+credentials.env
+config.toml
 
-# Exclude version control system files
-.git/
-.gitignore
-.svn/
+# IDE and editor files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# Development tools and caches
+.roo/
+.roomodes
+.aider.*
+.memory/
+.claude/
+.swarm/
+.hive-mind/
+.mcp.json
+
+# Documentation and planning files
+docs/
+*.md
+PLANNING.md
+TODO.md
+STAGE_*.md
+SERVICE_*.md
+PROGRESS_*.md
+
+# Test files and directories
+test/
+*_test.py
+test_*.py
+
+# Storage and cache directories
+storage/
+logs/
+temp/
+.pytest_cache/
+
+# Build outputs
+dist/
+build/
+models/
+node_modules/
+
+# Generated videos and media
+final-*.mp4
+test_*.mp4
+*.temp
+
+# Module files that are imports (not actual modules)
+asyncio
+claude-flow*
+json
+os
+redis
+requests
+st
+sys
+time
+uvicorn
+websockets
+
+# Workspace and configuration files
+*.code-workspace
+deployment.log
+health_check.sh
+start_*.sh
+webui.*
+
+# Coordination and consensus builder (development tools)
+coordination/
+consensus-builder/
+
+# Worker and utility scripts
+worker/
+utils/
+scripts/
 
 

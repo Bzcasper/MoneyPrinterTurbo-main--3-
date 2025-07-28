@@ -1,4 +1,7 @@
 # MoneyPrinterTurbo MCP Configuration Example
+
+[supabase]
+access_token = "your_supabase_access_token_here"
 # Copy this to config.toml and customize for your deployment
 
 [app]

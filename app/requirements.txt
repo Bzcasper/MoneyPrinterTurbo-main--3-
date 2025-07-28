@@ -21,3 +21,6 @@ tenacity
 python-dotenv
 websockets
 PyJWT
+supabase
+sqlalchemy
+asyncpg

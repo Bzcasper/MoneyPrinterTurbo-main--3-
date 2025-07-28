@@ -1,0 +1,38 @@
+# Core Supabase Integration Dependencies
+supabase==2.0.0
+postgrest==0.10.8
+python-dotenv==1.0.0
+
+# Database Dependencies
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Async Support
+aiohttp==3.9.1
+asyncio-mqtt==0.16.1
+
+# Utilities
+pydantic==2.5.0
+typing-extensions==4.8.0
+
+# Testing Dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Optional: Enhanced logging and monitoring
+structlog==23.2.0
+rich==13.7.0
+
+# Optional: For MCP integration
+websockets==12.0
+httpx==0.25.2
+
+# Optional: For data validation
+validators==0.22.0
+email-validator==2.1.0
+
+# Development Dependencies (optional)
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
