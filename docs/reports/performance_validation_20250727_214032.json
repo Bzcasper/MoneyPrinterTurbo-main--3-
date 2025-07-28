@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-07-27T21:40:32.524346",
+  "test_suite": "MoneyPrinterTurbo Enhanced Performance Validation",
+  "version": "2.0.0",
+  "tests": {
+    "import_performance": {
+      "Config System": {
+        "success": false,
+        "error": "No module named 'loguru'",
+        "status": "\u274c FAILED"
+      },
+      "Schema Models": {
+        "success": false,
+        "error": "No module named 'pydantic'",
+        "status": "\u274c FAILED"
+      },
+      "Hive Memory System": {
+        "success": false,
+        "error": "No module named 'loguru'",
+        "status": "\u274c FAILED"
+      },
+      "GPU Manager": {
+        "success": false,
+        "error": "No module named 'loguru'",
+        "status": "\u274c FAILED"
+      },
+      "Video Pipeline": {
+        "success": false,
+        "error": "No module named 'loguru'",
+        "status": "\u274c FAILED"
+      }
+    },
+    "gpu_performance": {
+      "error": "No module named 'loguru'",
+      "success": false
+    },
+    "hive_memory_performance": {
+      "error": "No module named 'loguru'",
+      "success": false
+    },
+    "integration_cli": {
+      "response_time": 0.13053441047668457,
+      "exit_code": 0,
+      "success": true,
+      "output_length": 558
+    },
+    "file_system_performance": {
+      "write_speed_mbps": 2768.8830208608397,
+      "read_speed_mbps": 2416.2129154905238,
+      "write_time": 0.0036115646362304688,
+      "read_time": 0.0041387081146240234,
+      "test_size_mb": 10
+    }
+  },
+  "summary": {
+    "total_tests": 5,
+    "successful_tests": 3,
+    "performance_score": 60.0,
+    "overall_status": "NEEDS_ATTENTION"
+  }
+}

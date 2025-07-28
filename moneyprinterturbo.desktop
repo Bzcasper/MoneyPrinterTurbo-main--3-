@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MoneyPrinterTurbo Enhanced
+Comment=Advanced AI Video Generation Platform with Swarm Intelligence
+Exec=streamlit run /home/bobby/Downloads/MoneyPrinterTurbo-main\ \(3\)/webui/Main.py --browser.serverAddress=0.0.0.0 --server.enableCORS=True
+Icon=/home/bobby/Downloads/MoneyPrinterTurbo-main\ \(3\)/assets/api.jpg
+Terminal=false
+Categories=Multimedia;Video;Development;
+Keywords=video;ai;generation;multimedia;
+StartupNotify=true
+StartupWMClass=streamlit
+Path=/home/bobby/Downloads/MoneyPrinterTurbo-main\ \(3\)/
