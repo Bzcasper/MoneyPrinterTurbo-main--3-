@@ -944,10 +944,13 @@ class ThreadSafeResourcePool:
         
     def acquire_resource(self, clip_id: str) -> bool:
         """Acquire processing slot with memory management"""
-        if self._semaphore.acquire(blocking=True, timeout=30):
+        # Increased timeout and added retry logic for better resource acquisition
+        timeout_seconds = 60  # Increased from 30 to 60 seconds
+        if self._semaphore.acquire(blocking=True, timeout=timeout_seconds):
             with self._lock:
                 self._active_clips[clip_id] = True
                 return True
+        logger.warning(f"Failed to acquire resource for {clip_id} after {timeout_seconds}s timeout")
         return False
     
     def release_resource(self, clip_id: str):
@@ -1262,7 +1265,8 @@ def _process_clips_parallel(
     optimal_threads = min(max(threads, cpu_count * 2), 16)  # Cap at 16 threads
     
     # Initialize thread-safe resource management
-    resource_pool = ThreadSafeResourcePool(max_concurrent_clips=optimal_threads // 2)
+    # Allow more concurrent clips to match thread pool capacity
+    resource_pool = ThreadSafeResourcePool(max_concurrent_clips=optimal_threads)
     progress_queue = Queue()
     
     logger.info(f"Starting parallel clip processing with {optimal_threads} threads")
@@ -1282,7 +1286,8 @@ def _process_clips_parallel(
     logger.info(f"Will process {len(clips_needed)} clips to match audio duration")
     
     # Process clips in parallel batches to manage memory
-    batch_size = optimal_threads * 2  # Process in batches to avoid memory overflow
+    # Reduce batch size to match resource pool capacity and prevent contention
+    batch_size = optimal_threads  # Match batch size to thread pool capacity
     successful_clips = []
     failed_count = 0
     
