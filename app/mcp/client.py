@@ -12,7 +12,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Callable, Union
 from datetime import datetime, timedelta
 import websockets
-from websockets.client import WebSocketClientProtocol
+from websockets.legacy.client import WebSocketClientProtocol
 from loguru import logger
 import aiohttp
 from dataclasses import dataclass

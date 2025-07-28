@@ -8,7 +8,14 @@ from xml.sax.saxutils import unescape
 import edge_tts
 import requests
 from edge_tts import SubMaker, submaker
-from edge_tts.submaker import mktimestamp
+
+# Define mktimestamp function if it doesn't exist in edge_tts
+def mktimestamp(seconds: float) -> str:
+    """Create a timestamp in the format `HH:MM:SS,mmm`."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{seconds:06.3f}".replace(".", ",")
 from loguru import logger
 from moviepy.video.tools import subtitles
 

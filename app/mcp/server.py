@@ -24,7 +24,27 @@ from .protocol import (
 from .tools import MoneyPrinterMCPTools
 from .auth import MCPAuthenticator
 from .discovery import MCPServiceRegistry
-from app.config import config
+
+# Import config module with fallback
+try:
+    from app.config import config
+except ImportError:
+    # Fallback configuration for development/testing
+    class FallbackConfig:
+        def __init__(self):
+            self.app = {
+                "mcp_max_connections": 100,
+                "mcp_rate_limit_requests": 100,
+                "mcp_rate_limit_window": 60,
+                "mcp_circuit_breaker_threshold": 5,
+                "mcp_circuit_breaker_timeout": 60,
+                "enable_redis": False,
+                "redis_host": "localhost",
+                "redis_port": 6379,
+                "redis_db": 0,
+                "redis_password": ""
+            }
+    config = FallbackConfig()
 
 
 class MCPConnectionManager:

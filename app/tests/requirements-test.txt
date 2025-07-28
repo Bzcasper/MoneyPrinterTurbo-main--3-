@@ -1,0 +1,3 @@
+pytest==8.3.5
+fastapi[testing]
+PyJWT==2.8.0

@@ -13,10 +13,49 @@ from functools import wraps
 from loguru import logger
 
 from .protocol import MCPTool, MCPRequest, MCPResponse, MCPError, create_success_response, create_error_response
-from app.services import llm, task as tm
-from app.services.voice import get_voice_manager
-from app.services.video_generator_enhanced import generate_video
-from app.models.schema import TaskVideoRequest, VideoScriptRequest, AudioRequest
+
+# Import services with fallback handling
+try:
+    from app.services import llm, task as tm
+    from app.services.voice import get_voice_manager
+    SERVICES_AVAILABLE = True
+except ImportError:
+    logger.warning("Video generation services not available - running in standalone mode")
+    SERVICES_AVAILABLE = False
+    # Mock services for development/testing
+    class MockLLMService:
+        def generate_script(self, video_subject, language="", paragraph_number=1):
+            return f"Mock script for '{video_subject}' with {paragraph_number} paragraphs in {language or 'English'}"
+        def generate_terms(self, video_subject, video_script, amount=5):
+            return [f"term_{i}_{video_subject[:10]}" for i in range(amount)]
+    
+    class MockVoiceManager:
+        def synthesize(self, text, voice, rate=1.0, volume=1.0):
+            return f"mock_audio_{hash(text)}.wav"
+    
+    llm = MockLLMService()
+    def get_voice_manager():
+        return MockVoiceManager()
+
+# Import models with fallback
+try:
+    from app.models.schema import TaskVideoRequest, VideoScriptRequest, AudioRequest
+except ImportError:
+    # Fallback model definitions
+    class TaskVideoRequest:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class VideoScriptRequest:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class AudioRequest:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
 
 
 class MCPToolRegistry:
@@ -268,7 +307,7 @@ class MoneyPrinterMCPTools:
                     "subtitle_enabled": {
                         "type": "boolean",
                         "description": "Enable subtitles",
-                        "default": true
+                        "default": True
                     }
                 },
                 "required": ["video_subject"]

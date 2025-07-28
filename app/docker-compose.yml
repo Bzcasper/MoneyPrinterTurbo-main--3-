@@ -5,16 +5,16 @@ x-common-volumes: &common-volumes
 services:
   webui:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: app/Dockerfile
     image: moneyprinterturbo-webui:latest
     container_name: moneyprinterturbo-webui-new
     ports:
       - "8501:8501"
     command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
-    volumes: 
-      - ./:/MoneyPrinterTurbo:rw
-      - ./storage:/MoneyPrinterTurbo/storage:rw
+    volumes:
+      - ../:/MoneyPrinterTurbo:rw
+      - ../storage:/MoneyPrinterTurbo/storage:rw
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
@@ -28,18 +28,17 @@ services:
     
   api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: app/Dockerfile
     image: moneyprinterturbo-api:latest
     container_name: moneyprinterturbo-api-new
     ports:
       - "8080:8080"
-    command: [ 
-      "python3", "-m", "uvicorn", "app.main:app", 
-      "--host", "0.0.0.0", 
+    command: [
+      "python3", "-m", "uvicorn", "app.main:app",
+      "--host", "0.0.0.0",
       "--port", "8080",
       "--workers", "4",
-      "--worker-class", "uvicorn.workers.UvicornWorker",
       "--access-log",
       "--log-level", "info"
     ]
@@ -95,6 +94,52 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  mcp-server:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    image: moneyprinterturbo-mcp:latest
+    container_name: moneyprinterturbo-mcp-new
+    ports:
+      - "8081:8081"
+    command: [
+      "python3", "-c",
+      "import asyncio; from app.mcp.server import MCPServer; server = MCPServer('0.0.0.0', 8081); asyncio.run(server.start_server())"
+    ]
+    volumes:
+      - ../:/MoneyPrinterTurbo:rw
+      - ../storage:/MoneyPrinterTurbo/storage:rw
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/MoneyPrinterTurbo
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8081
+      - ENVIRONMENT=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENABLE_REDIS=true
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import websockets; import asyncio; asyncio.run(websockets.connect('ws://localhost:8081').close())"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   redis_data:

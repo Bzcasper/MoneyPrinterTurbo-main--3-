@@ -37,10 +37,10 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /MoneyPrinterTurbo
 
 # Copy requirements first for better caching
-COPY requirements.txt ./
+COPY app/requirements.txt ./requirements.txt
 
 # Install Python dependencies (use streamlit version from requirements.txt)
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt websockets
 
 # Copy application code
 COPY . .

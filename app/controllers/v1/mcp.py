@@ -7,6 +7,7 @@ to interact with MCP services through familiar REST endpoints.
 
 import asyncio
 import json
+import time
 from typing import Any, Dict, List, Optional
 from fastapi import Request, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -370,15 +371,34 @@ async def initialize_mcp_server():
     global mcp_server
     
     try:
-        host = config.app.get("mcp_server_host", "localhost")
-        port = config.app.get("mcp_server_port", 8081)
+        import os
         
-        mcp_server = MCPServer(host=host, port=port)
-        
-        # Start server in background
-        asyncio.create_task(mcp_server.start_server())
-        
-        logger.info(f"MCP server initialized on {host}:{port}")
+        # Check if we're running in a container environment where MCP server is already running
+        if os.getenv("ENVIRONMENT") == "production" or os.path.exists("/.dockerenv"):
+            logger.info("Detected container environment - MCP server already running, creating client-only instance")
+            
+            # Create MCP server instance without starting the WebSocket server
+            # This allows the REST API endpoints to work while the actual server runs in a separate container
+            host = config.app.get("mcp_server_host", "localhost")
+            port = config.app.get("mcp_server_port", 8081)
+            
+            mcp_server = MCPServer(host=host, port=port)
+            
+            # Initialize components without starting the WebSocket server
+            mcp_server.start_time = time.time()
+            logger.info(f"MCP server client initialized (server running separately on {host}:{port})")
+            
+        else:
+            # Development environment - start embedded MCP server
+            host = config.app.get("mcp_server_host", "localhost")
+            port = config.app.get("mcp_server_port", 8081)
+            
+            mcp_server = MCPServer(host=host, port=port)
+            
+            # Start server in background
+            asyncio.create_task(mcp_server.start_server())
+            
+            logger.info(f"MCP server initialized and started on {host}:{port}")
         
     except Exception as e:
         logger.error(f"Failed to initialize MCP server: {str(e)}")
