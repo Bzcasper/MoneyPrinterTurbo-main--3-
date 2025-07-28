@@ -349,70 +349,306 @@ codec_optimizer = CodecOptimizer()
 video_codec = codec_optimizer.get_optimal_codec_settings()['codec']
 fps = default_fps
 
-# Memory optimization settings
-MAX_MEMORY_USAGE_MB = 1024  # Maximum memory usage in MB
-FFMPEG_CHUNK_SIZE = 4096  # FFmpeg buffer size
-CONCAT_BATCH_SIZE = 8  # Number of clips to concatenate in one batch
+# Enhanced Memory optimization settings
+MAX_MEMORY_USAGE_MB = 2048  # Increased memory limit for better performance
+FFMPEG_CHUNK_SIZE = 8192  # Optimized FFmpeg buffer size
+CONCAT_BATCH_SIZE = 6  # Reduced batch size for memory efficiency
+
+def _calculate_optimal_batch_size(video_count: int, available_memory_gb: float) -> int:
+    """
+    Calculate optimal batch size based on system resources and video count
+    
+    Args:
+        video_count: Number of videos to process
+        available_memory_gb: Available system memory in GB
+    
+    Returns:
+        Optimal batch size for processing
+    """
+    # Base batch size calculation
+    if available_memory_gb >= 8:
+        base_size = min(12, video_count)
+    elif available_memory_gb >= 4:
+        base_size = min(8, video_count) 
+    elif available_memory_gb >= 2:
+        base_size = min(6, video_count)
+    else:
+        base_size = min(3, video_count)
+    
+    # Adjust for video count
+    if video_count <= 5:
+        return video_count
+    elif video_count <= 10:
+        return min(base_size, 6)
+    else:
+        return min(base_size, 10)
+
+def _detect_hardware_acceleration() -> dict:
+    """
+    Detect available hardware acceleration options
+    
+    Returns:
+        Dictionary with available acceleration methods
+    """
+    acceleration_options = {
+        'nvenc': False,
+        'qsv': False, 
+        'vaapi': False,
+        'videotoolbox': False
+    }
+    
+    try:
+        # Test NVENC availability
+        result = subprocess.run([
+            'ffmpeg', '-hide_banner', '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=1',
+            '-c:v', 'h264_nvenc', '-f', 'null', '-'
+        ], capture_output=True, timeout=10)
+        acceleration_options['nvenc'] = result.returncode == 0
+    except:
+        pass
+    
+    try:
+        # Test QSV availability  
+        result = subprocess.run([
+            'ffmpeg', '-hide_banner', '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=1',
+            '-c:v', 'h264_qsv', '-f', 'null', '-'
+        ], capture_output=True, timeout=10)
+        acceleration_options['qsv'] = result.returncode == 0
+    except:
+        pass
+        
+    try:
+        # Test VAAPI availability
+        result = subprocess.run([
+            'ffmpeg', '-hide_banner', '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=1',
+            '-c:v', 'h264_vaapi', '-f', 'null', '-'
+        ], capture_output=True, timeout=10)
+        acceleration_options['vaapi'] = result.returncode == 0
+    except:
+        pass
+    
+    logger.info(f"Hardware acceleration detected: {acceleration_options}")
+    return acceleration_options
+MEMORY_PRESSURE_THRESHOLD = 0.75  # Trigger cleanup at 75% usage
+MEMORY_CLEANUP_INTERVAL = 30  # Force cleanup every 30 seconds
 
 
 class MemoryMonitor:
-    """Monitor memory usage and provide memory management utilities"""
+    """Enhanced memory usage monitor with intelligent cleanup and pressure handling"""
     
-    @staticmethod
-    def get_memory_usage_mb() -> float:
-        """Get current memory usage in MB"""
+    _last_cleanup = 0
+    _memory_history = []
+    _peak_usage = 0
+    
+    @classmethod
+    def get_memory_usage_mb(cls) -> float:
+        """Get current memory usage in MB with history tracking"""
         process = psutil.Process()
-        return process.memory_info().rss / 1024 / 1024
+        current_usage = process.memory_info().rss / 1024 / 1024
+        
+        # Track peak usage
+        if current_usage > cls._peak_usage:
+            cls._peak_usage = current_usage
+        
+        # Track memory history (last 10 measurements)
+        cls._memory_history.append(current_usage)
+        if len(cls._memory_history) > 10:
+            cls._memory_history.pop(0)
+        
+        return current_usage
     
-    @staticmethod
-    def is_memory_available(required_mb: float = 500) -> bool:
-        """Check if sufficient memory is available"""
-        current_usage = MemoryMonitor.get_memory_usage_mb()
-        return (MAX_MEMORY_USAGE_MB - current_usage) > required_mb
+    @classmethod
+    def get_system_memory_info(cls) -> dict:
+        """Get comprehensive system memory information"""
+        vm = psutil.virtual_memory()
+        return {
+            'total_mb': vm.total / 1024 / 1024,
+            'available_mb': vm.available / 1024 / 1024,
+            'used_mb': vm.used / 1024 / 1024,
+            'percentage': vm.percent,
+            'process_mb': cls.get_memory_usage_mb(),
+            'peak_mb': cls._peak_usage
+        }
     
-    @staticmethod
-    def force_gc_cleanup():
-        """Force garbage collection and memory cleanup"""
-        gc.collect()
-        gc.collect()  # Call twice for better cleanup
+    @classmethod
+    def is_memory_available(cls, required_mb: float = 500) -> bool:
+        """Check if sufficient memory is available with system-wide analysis"""
+        current_usage = cls.get_memory_usage_mb()
+        system_info = cls.get_system_memory_info()
+        
+        # Check both process limit and system availability
+        process_available = (MAX_MEMORY_USAGE_MB - current_usage) > required_mb
+        system_available = system_info['available_mb'] > required_mb * 1.5  # 50% buffer
+        
+        return process_available and system_available
+    
+    @classmethod
+    def is_memory_pressure(cls) -> bool:
+        """Detect memory pressure conditions"""
+        current_usage = cls.get_memory_usage_mb()
+        system_info = cls.get_system_memory_info()
+        
+        # Check multiple pressure indicators
+        process_pressure = current_usage > (MAX_MEMORY_USAGE_MB * MEMORY_PRESSURE_THRESHOLD)
+        system_pressure = system_info['percentage'] > 85
+        trend_pressure = cls._is_memory_trend_increasing()
+        
+        return process_pressure or system_pressure or trend_pressure
+    
+    @classmethod
+    def _is_memory_trend_increasing(cls) -> bool:
+        """Check if memory usage is trending upward"""
+        if len(cls._memory_history) < 5:
+            return False
+        
+        recent = cls._memory_history[-3:]
+        older = cls._memory_history[-6:-3] if len(cls._memory_history) >= 6 else cls._memory_history[:-3]
+        
+        if not older:
+            return False
+        
+        recent_avg = sum(recent) / len(recent)
+        older_avg = sum(older) / len(older)
+        
+        return recent_avg > older_avg * 1.2  # 20% increase trend
+    
+    @classmethod
+    def smart_gc_cleanup(cls, force: bool = False):
+        """Intelligent garbage collection with timing and pressure awareness"""
+        import time
+        current_time = time.time()
+        
+        # Determine if cleanup is needed
+        time_based = (current_time - cls._last_cleanup) > MEMORY_CLEANUP_INTERVAL
+        pressure_based = cls.is_memory_pressure()
+        
+        if force or time_based or pressure_based:
+            logger.debug(f"Memory cleanup triggered - Force: {force}, Time: {time_based}, Pressure: {pressure_based}")
+            
+            # Pre-cleanup memory
+            before_usage = cls.get_memory_usage_mb()
+            
+            # Aggressive garbage collection
+            for i in range(3):  # Multiple rounds for better cleanup
+                gc.collect()
+                if i < 2:  # Small delay between collections
+                    time.sleep(0.1)
+            
+            # Clear internal caches if available
+            try:
+                import moviepy.editor
+                if hasattr(moviepy.editor, '_INSTANCES'):
+                    moviepy.editor._INSTANCES.clear()
+            except:
+                pass
+            
+            # Post-cleanup memory
+            after_usage = cls.get_memory_usage_mb()
+            freed_mb = before_usage - after_usage
+            
+            logger.info(f"Memory cleanup freed {freed_mb:.1f}MB (from {before_usage:.1f}MB to {after_usage:.1f}MB)")
+            cls._last_cleanup = current_time
+    
+    @classmethod
+    def get_optimal_batch_size(cls, clip_count: int, base_batch_size: int = CONCAT_BATCH_SIZE) -> int:
+        """Calculate optimal batch size based on current memory conditions"""
+        if not cls.is_memory_available(1000):  # Less than 1GB available
+            return max(2, base_batch_size // 2)
+        elif cls.is_memory_pressure():
+            return max(3, base_batch_size - 2)
+        elif clip_count > 20 and cls.get_memory_usage_mb() < MAX_MEMORY_USAGE_MB * 0.5:
+            return min(10, base_batch_size + 2)  # Can handle larger batches
+        else:
+            return base_batch_size
+    
+    @classmethod
+    def log_memory_stats(cls):
+        """Log comprehensive memory statistics"""
+        info = cls.get_system_memory_info()
+        logger.info(f"Memory Stats - Process: {info['process_mb']:.1f}MB, Peak: {info['peak_mb']:.1f}MB, System: {info['percentage']:.1f}%")
 
 
-def close_clip(clip):
+def close_clip(clip, aggressive_cleanup: bool = False):
+    """Enhanced clip cleanup with improved resource management and memory optimization"""
     if clip is None:
         return
 
     try:
-        # close main resources
+        # Close main resources with enhanced error handling
         if hasattr(clip, "reader") and clip.reader is not None:
-            clip.reader.close()
+            try:
+                clip.reader.close()
+                clip.reader = None
+            except Exception as e:
+                logger.debug(f"Error closing clip reader: {str(e)}")
 
-        # close audio resources
+        # Close audio resources with deep cleanup
         if hasattr(clip, "audio") and clip.audio is not None:
-            if hasattr(clip.audio, "reader") and clip.audio.reader is not None:
-                clip.audio.reader.close()
-            del clip.audio
+            try:
+                if hasattr(clip.audio, "reader") and clip.audio.reader is not None:
+                    clip.audio.reader.close()
+                    clip.audio.reader = None
+                
+                # Clear audio array data if present
+                if hasattr(clip.audio, "array"):
+                    clip.audio.array = None
+                
+                del clip.audio
+                clip.audio = None
+            except Exception as e:
+                logger.debug(f"Error closing audio resources: {str(e)}")
 
-        # close mask resources
+        # Close mask resources with enhanced cleanup
         if hasattr(clip, "mask") and clip.mask is not None:
-            if hasattr(clip.mask, "reader") and clip.mask.reader is not None:
-                clip.mask.reader.close()
-            del clip.mask
+            try:
+                if hasattr(clip.mask, "reader") and clip.mask.reader is not None:
+                    clip.mask.reader.close()
+                    clip.mask.reader = None
+                del clip.mask
+                clip.mask = None
+            except Exception as e:
+                logger.debug(f"Error closing mask resources: {str(e)}")
 
-        # handle child clips in composite clips
+        # Enhanced child clip cleanup with depth limit
         if hasattr(clip, "clips") and clip.clips:
-            for child_clip in clip.clips:
-                if child_clip is not clip:  # avoid possible circular references
-                    close_clip(child_clip)
+            child_clips = list(clip.clips)  # Create copy to avoid modification during iteration
+            for child_clip in child_clips:
+                if child_clip is not clip and child_clip is not None:  # avoid circular references
+                    close_clip(child_clip, aggressive_cleanup=False)  # Recursive but not aggressive
 
-        # clear clip list
+        # Clear clip lists and arrays
         if hasattr(clip, "clips"):
-            clip.clips = []
+            clip.clips.clear()
+            clip.clips = None
+        
+        # Clear video arrays if present
+        if hasattr(clip, "array"):
+            clip.array = None
+        
+        # Clear any cached frames
+        if hasattr(clip, "_cached_frames"):
+            clip._cached_frames.clear()
+        
+        # Close file handles that might be open
+        if hasattr(clip, "filename") and hasattr(clip, "fps"):
+            # This is likely a VideoFileClip, ensure all handles are closed
+            if hasattr(clip, "_cached_frames"):
+                clip._cached_frames = None
 
     except Exception as e:
-        logger.error(f"failed to close clip: {str(e)}")
-
-    del clip
-    MemoryMonitor.force_gc_cleanup()
+        logger.error(f"Failed to close clip resources: {str(e)}")
+    
+    finally:
+        # Always attempt to delete the clip reference
+        try:
+            if 'clip' in locals():
+                del clip
+        except:
+            pass
+        
+        # Trigger cleanup based on conditions
+        if aggressive_cleanup or MemoryMonitor.is_memory_pressure():
+            MemoryMonitor.smart_gc_cleanup(force=aggressive_cleanup)
 
 
 def delete_files(files: List[str] | str):
@@ -428,10 +664,14 @@ def delete_files(files: List[str] | str):
 
 def progressive_ffmpeg_concat(video_files: List[str], output_path: str, threads: int = 2) -> bool:
     """
-    Progressive video concatenation using FFmpeg for 3-5x speedup and 70-80% memory reduction.
+    Enhanced progressive video concatenation with intelligent memory management.
     
-    Uses FFmpeg's concat protocol with streaming to avoid loading entire clips into memory.
-    Processes videos in batches to maintain memory efficiency.
+    Features:
+    - Adaptive batch sizing based on memory conditions
+    - Streaming concatenation to minimize memory usage  
+    - Intelligent cleanup between batches
+    - Memory pressure monitoring
+    - 70-80% memory reduction compared to MoviePy concatenation
     
     Args:
         video_files: List of video file paths to concatenate
@@ -455,23 +695,45 @@ def progressive_ffmpeg_concat(video_files: List[str], output_path: str, threads:
             logger.error(f"Failed to copy single video file: {str(e)}")
             return False
     
+    # Initialize memory monitoring
+    MemoryMonitor.log_memory_stats()
+    start_memory = MemoryMonitor.get_memory_usage_mb()
+    
     try:
+        # Determine optimal batch size based on memory conditions
+        optimal_batch_size = MemoryMonitor.get_optimal_batch_size(len(video_files))
+        logger.info(f"Using adaptive batch size: {optimal_batch_size} (for {len(video_files)} videos)")
+        
         # Create temporary directory for batch processing
         with tempfile.TemporaryDirectory() as temp_dir:
             concat_list_file = os.path.join(temp_dir, "concat_list.txt")
             
-            # Process videos in batches to manage memory
-            batch_size = min(CONCAT_BATCH_SIZE, len(video_files))
-            batches = [video_files[i:i + batch_size] for i in range(0, len(video_files), batch_size)]
+            # Use adaptive batch size from memory monitor
+            batches = [video_files[i:i + optimal_batch_size] for i in range(0, len(video_files), optimal_batch_size)]
             
-            logger.info(f"Processing {len(video_files)} videos in {len(batches)} batches (batch size: {batch_size})")
+            logger.info(f"Processing {len(video_files)} videos in {len(batches)} batches (adaptive batch size: {optimal_batch_size})")
             
             if len(batches) == 1:
-                # Single batch - direct concatenation
-                return _ffmpeg_concat_batch(video_files, output_path, concat_list_file, threads, use_hardware_acceleration=True)
+                # Single batch - direct concatenation with memory monitoring
+                success = _ffmpeg_concat_batch(video_files, output_path, concat_list_file, threads, use_hardware_acceleration=True)
+                
+                # Log memory efficiency
+                end_memory = MemoryMonitor.get_memory_usage_mb()
+                memory_saved = start_memory - end_memory if end_memory < start_memory else 0
+                logger.info(f"Memory optimization: {memory_saved:.1f}MB saved during concatenation")
+                
+                return success
             else:
-                # Multiple batches - progressive concatenation
-                return _ffmpeg_progressive_concat(batches, output_path, temp_dir, threads)
+                # Multiple batches - progressive concatenation with memory management
+                success = _ffmpeg_progressive_concat(batches, output_path, temp_dir, threads, optimal_batch_size)
+                
+                # Log final memory stats
+                end_memory = MemoryMonitor.get_memory_usage_mb()
+                memory_efficiency = ((start_memory - end_memory) / start_memory * 100) if start_memory > 0 else 0
+                logger.success(f"Progressive concatenation completed with {memory_efficiency:.1f}% memory efficiency")
+                MemoryMonitor.log_memory_stats()
+                
+                return success
                 
     except Exception as e:
         logger.error(f"Progressive FFmpeg concatenation failed: {str(e)}")
@@ -810,26 +1072,27 @@ def _process_single_clip(
                 clip = CompositeVideoClip([background, clip_resized])
 
         # Apply video transitions with thread-safe random generation
-        shuffle_side = random.choice(["left", "right", "top", "bottom"])
-        if video_transition_mode.value == VideoTransitionMode.none.value:
-            pass  # No transition
-        elif video_transition_mode.value == VideoTransitionMode.fade_in.value:
-            clip = video_effects.fadein_transition(clip, 1)
-        elif video_transition_mode.value == VideoTransitionMode.fade_out.value:
-            clip = video_effects.fadeout_transition(clip, 1)
-        elif video_transition_mode.value == VideoTransitionMode.slide_in.value:
-            clip = video_effects.slidein_transition(clip, 1, shuffle_side)
-        elif video_transition_mode.value == VideoTransitionMode.slide_out.value:
-            clip = video_effects.slideout_transition(clip, 1, shuffle_side)
-        elif video_transition_mode.value == VideoTransitionMode.shuffle.value:
-            transition_funcs = [
-                lambda c: video_effects.fadein_transition(c, 1),
-                lambda c: video_effects.fadeout_transition(c, 1),
-                lambda c: video_effects.slidein_transition(c, 1, shuffle_side),
-                lambda c: video_effects.slideout_transition(c, 1, shuffle_side),
-            ]
-            shuffle_transition = random.choice(transition_funcs)
-            clip = shuffle_transition(clip)
+        if video_transition_mode is not None:
+            shuffle_side = random.choice(["left", "right", "top", "bottom"])
+            if video_transition_mode.value == VideoTransitionMode.none.value:
+                pass  # No transition
+            elif video_transition_mode.value == VideoTransitionMode.fade_in.value:
+                clip = video_effects.fadein_transition(clip, 1)
+            elif video_transition_mode.value == VideoTransitionMode.fade_out.value:
+                clip = video_effects.fadeout_transition(clip, 1)
+            elif video_transition_mode.value == VideoTransitionMode.slide_in.value:
+                clip = video_effects.slidein_transition(clip, 1, shuffle_side)
+            elif video_transition_mode.value == VideoTransitionMode.slide_out.value:
+                clip = video_effects.slideout_transition(clip, 1, shuffle_side)
+            elif video_transition_mode.value == VideoTransitionMode.shuffle.value:
+                transition_funcs = [
+                    lambda c: video_effects.fadein_transition(c, 1),
+                    lambda c: video_effects.fadeout_transition(c, 1),
+                    lambda c: video_effects.slidein_transition(c, 1, shuffle_side),
+                    lambda c: video_effects.slideout_transition(c, 1, shuffle_side),
+                ]
+                shuffle_transition = random.choice(transition_funcs)
+                clip = shuffle_transition(clip)
 
         # Ensure clip doesn't exceed maximum duration
         if clip.duration > max_clip_duration:

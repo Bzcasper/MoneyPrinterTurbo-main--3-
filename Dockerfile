@@ -20,14 +20,9 @@ RUN apt-get update && apt-get install -y \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest FFmpeg static build
-RUN mkdir -p /tmp/ffmpeg && cd /tmp/ffmpeg && \
-    wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
-    tar xf ffmpeg-release-amd64-static.tar.xz && \
-    cd ffmpeg-*-static && \
-    cp ffmpeg ffprobe /usr/local/bin/ && \
-    chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
-    cd / && rm -rf /tmp/ffmpeg
+# Install FFmpeg from Debian repositories
+RUN apt-get update && apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -44,8 +39,9 @@ RUN useradd -m -u 1000 appuser && \
 # Copy requirements first for better caching
 COPY requirements.txt ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies (including specific Streamlit version if not in requirements.txt)
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir streamlit==1.32.2
 
 # Copy application code
 COPY . .

@@ -53,6 +53,16 @@ ui = _cfg.get(
         "hide_log": False,
     },
 )
+hive_memory = _cfg.get(
+    "hive_memory",
+    {
+        "db_type": "sqlite",
+        "db_path": "./memory/hive_memory.db",
+        "max_connections": 10,
+        "auto_create_tables": True,
+        "retention_days": 30
+    },
+)
 
 hostname = socket.gethostname()
 
