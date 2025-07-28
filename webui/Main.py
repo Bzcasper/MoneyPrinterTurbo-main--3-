@@ -5,6 +5,7 @@ from datetime import datetime
 # No replacement needed
 from loguru import logger
 import requests
+import streamlit as st
 
 # Add the root directory of the project to the system path to allow importing modules from the project
 root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

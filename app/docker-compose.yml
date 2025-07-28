@@ -52,6 +52,8 @@ services:
         max-file: "3"
   redis:
     image: redis:alpine
+    container_name: moneyprinterturbo-redis-new
     restart: always
-    ports:
-      - "6379:6379"
+    # Expose Redis port internally only to avoid host port conflicts
+    expose:
+      - "6379"
