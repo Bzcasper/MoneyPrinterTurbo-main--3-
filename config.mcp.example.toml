@@ -1,0 +1,180 @@
+# MoneyPrinterTurbo MCP Configuration Example
+# Copy this to config.toml and customize for your deployment
+
+[app]
+# Basic application settings
+title = "MoneyPrinterTurbo with MCP"
+version = "2.0.0"
+debug = false
+log_level = "INFO"
+
+# Core MCP Server Configuration
+mcp_enabled = true
+mcp_server_host = "0.0.0.0"
+mcp_server_port = 8081
+mcp_max_connections = 100
+mcp_rate_limit_requests = 100
+mcp_rate_limit_window = 60
+
+# Authentication Configuration
+mcp_jwt_secret = "your-super-secret-jwt-key-change-in-production"
+mcp_jwt_algorithm = "HS256"
+mcp_jwt_expiration = 3600  # 1 hour
+
+# API Keys for MCP access
+[app.mcp_api_keys]
+"mcp_admin_key_12345" = { name = "Admin User", role = "admin", active = true, created = "2024-01-01T00:00:00" }
+"mcp_user_key_67890" = { name = "Regular User", role = "user", active = true, created = "2024-01-01T00:00:00" }
+"mcp_viewer_key_abcde" = { name = "Viewer User", role = "viewer", active = true, created = "2024-01-01T00:00:00" }
+
+# HMAC Client Secrets (for HMAC authentication)
+[app.mcp_client_secrets]
+"client_001" = "hmac_secret_for_client_001"
+"client_002" = "hmac_secret_for_client_002"
+
+# Client Roles (for HMAC authentication)
+[app.mcp_client_roles]
+"client_001" = "admin"
+"client_002" = "user"
+
+# Circuit Breaker Configuration
+mcp_circuit_breaker_threshold = 5
+mcp_circuit_breaker_timeout = 60
+
+# Service Discovery Configuration
+mcp_heartbeat_interval = 30
+mcp_health_check_interval = 10
+mcp_service_timeout = 90
+
+# Monitoring and Metrics
+mcp_enable_monitoring = true
+mcp_metrics_retention_hours = 24
+mcp_enable_alerts = true
+
+# Redis Configuration (for distributed features)
+enable_redis = true
+redis_host = "redis"
+redis_port = 6379
+redis_db = 0
+redis_password = "your_redis_password"
+
+# Video Generation Configuration
+video_generation_max_concurrent = 5
+video_generation_timeout = 300  # 5 minutes
+video_generation_cache_ttl = 3600  # 1 hour
+
+# Voice Synthesis Configuration
+voice_synthesis_cache_enabled = true
+voice_synthesis_cache_ttl = 7200  # 2 hours
+
+# LLM Provider Configuration (for script generation)
+llm_provider = "openai"
+openai_api_key = "your_openai_api_key"
+openai_model_name = "gpt-3.5-turbo"
+openai_base_url = "https://api.openai.com/v1"
+
+# Alternative LLM providers
+# moonshot_api_key = "your_moonshot_key"
+# moonshot_model_name = "moonshot-v1-8k"
+
+# ollama_model_name = "llama2"
+# ollama_base_url = "http://localhost:11434/v1"
+
+# azure_api_key = "your_azure_key"
+# azure_model_name = "gpt-35-turbo"
+# azure_base_url = "https://your-resource.openai.azure.com/"
+# azure_api_version = "2024-02-15-preview"
+
+# GPU Configuration
+gpu_enabled = true
+gpu_memory_limit = 8192  # MB
+
+# Task Management
+max_concurrent_tasks = 5
+task_timeout = 1800  # 30 minutes
+
+# File Storage
+storage_path = "./storage"
+temp_path = "./temp"
+output_path = "./output"
+
+# CORS Configuration
+allowed_origins = "http://localhost:8501,http://localhost:3000,http://localhost:8080"
+
+# Security Configuration
+trusted_hosts = "localhost,127.0.0.1,0.0.0.0"
+
+# MCP-specific Alert Rules
+[[app.mcp_alert_rules]]
+name = "high_error_rate"
+metric = "mcp.operations.error_rate"
+condition = "> 0.1"  # More than 10% error rate
+duration = 300  # 5 minutes
+cooldown = 900  # 15 minutes
+severity = "critical"
+enabled = true
+
+[[app.mcp_alert_rules]]
+name = "high_response_time"
+metric = "mcp.operations.duration.p95"
+condition = "> 5.0"  # More than 5 seconds
+duration = 300
+cooldown = 600
+severity = "warning"
+enabled = true
+
+[[app.mcp_alert_rules]]
+name = "connection_limit_reached"
+metric = "mcp.connections.active"
+condition = "> 90"  # More than 90 active connections
+duration = 60
+cooldown = 300
+severity = "warning"
+enabled = true
+
+[[app.mcp_alert_rules]]
+name = "tool_failure_spike"
+metric = "mcp.tools.failure_rate"
+condition = "> 0.2"  # More than 20% tool failure rate
+duration = 180
+cooldown = 600
+severity = "critical"
+enabled = true
+
+# Development and Testing Configuration
+[development]
+# Enable additional logging and debugging features
+mcp_debug_logging = true
+mcp_log_all_requests = false  # Set to true for detailed request logging
+mcp_enable_mock_tools = false  # Enable mock tools for testing
+
+# Test client configuration
+test_client_timeout = 30
+test_client_max_retries = 3
+
+# Performance testing
+load_test_concurrent_clients = 10
+load_test_requests_per_client = 100
+
+# Production Recommendations:
+# 1. Change all default secrets and API keys
+# 2. Use environment variables for sensitive configuration
+# 3. Enable Redis for distributed deployments
+# 4. Configure proper CORS origins for your domain
+# 5. Set up SSL/TLS termination at load balancer level
+# 6. Monitor resource usage and adjust limits accordingly
+# 7. Set up log aggregation and monitoring
+# 8. Configure backup and disaster recovery procedures
+
+# Environment Variable Overrides:
+# Most settings can be overridden with environment variables:
+# MCP_SERVER_HOST=0.0.0.0
+# MCP_SERVER_PORT=8081
+# MCP_JWT_SECRET=your-secret
+# REDIS_HOST=redis-server
+# OPENAI_API_KEY=your-key
+# etc.
+
+# Docker Compose Integration:
+# This configuration works well with Docker Compose deployments
+# Make sure to create proper network configurations and volume mounts

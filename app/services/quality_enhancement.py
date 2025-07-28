@@ -103,7 +103,7 @@ class VideoQualityEnhancer:
                 logger.warning(f"Failed to initialize neural processor: {e}")
                 self.neural_processor = None
     
-    def enhance_video(self, input_path: str, output_path: str, params: VideoParams) -> Dict:
+    async def enhance_video(self, input_path: str, output_path: str, params: VideoParams) -> Dict:
         """
         Main entry point for video quality enhancement
         
@@ -132,7 +132,7 @@ class VideoQualityEnhancer:
                 logger.info(f"📊 Video analysis: {analysis['issues_detected']} issues detected")
                 
                 # Step 2: Apply enhancements based on analysis
-                enhanced_path = self._apply_video_enhancements(
+                enhanced_path = await self._apply_video_enhancements(
                     input_path, analysis, params
                 )
                 
@@ -314,7 +314,7 @@ class VideoQualityEnhancer:
             logger.warning(f"⚠️ Frame analysis failed: {str(e)}")
             return {'noise_level': 0.5, 'contrast_level': 0.5, 'sharpness_score': 0.5}
     
-    def _apply_video_enhancements(self, input_path: str, analysis: Dict, params: VideoParams) -> str:
+    async def _apply_video_enhancements(self, input_path: str, analysis: Dict, params: VideoParams) -> str:
         """
         Apply video enhancements based on quality analysis
         
@@ -327,6 +327,91 @@ class VideoQualityEnhancer:
             Path to enhanced video file
         """
         logger.info("🎨 Applying video enhancements...")
+        
+        # Try neural enhancement first if available
+        if self.neural_processor and self.config.neural_quality_enhancement:
+            try:
+                neural_enhanced_path = await self._apply_neural_enhancements(
+                    input_path, analysis, params
+                )
+                if neural_enhanced_path:
+                    logger.success("✅ Neural enhancement applied")
+                    return neural_enhanced_path
+            except Exception as e:
+                logger.warning(f"⚠️ Neural enhancement failed: {e}")
+                if not self.config.neural_fallback_enabled:
+                    raise
+        
+        # Fallback to traditional enhancement
+        return self._apply_traditional_enhancements(input_path, analysis, params)
+    
+    async def _apply_neural_enhancements(self, input_path: str, analysis: Dict, params: VideoParams) -> Optional[str]:
+        """Apply neural model-based enhancements"""
+        try:
+            logger.info("🧠 Applying neural enhancements...")
+            
+            # Load video frames
+            cap = cv2.VideoCapture(input_path)
+            frames = []
+            
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # Convert BGR to RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frames.append(frame_rgb)
+                
+                # Limit frames for memory efficiency
+                if len(frames) >= 50:
+                    break
+            
+            cap.release()
+            
+            if not frames:
+                return None
+            
+            # Apply neural quality enhancement
+            enhanced_frames = await self.neural_processor.enhance_video_quality(frames)
+            
+            # Apply neural upscaling if needed
+            if 'low_resolution' in analysis['issues_detected'] and self.config.neural_upscaling:
+                enhanced_frames = await self.neural_processor.upscale_video(enhanced_frames)
+                self.processing_stats['operations_applied'].append('neural_upscaling')
+            
+            # Save enhanced video
+            enhanced_path = os.path.join(self.temp_dir, "neural_enhanced.mp4")
+            
+            # Get video properties
+            original_cap = cv2.VideoCapture(input_path)
+            fps = original_cap.get(cv2.CAP_PROP_FPS)
+            original_cap.release()
+            
+            # Write enhanced video
+            height, width = enhanced_frames[0].shape[:2]
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(enhanced_path, fourcc, fps, (width, height))
+            
+            for frame in enhanced_frames:
+                # Convert RGB to BGR for OpenCV
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                out.write(frame_bgr)
+            
+            out.release()
+            
+            self.processing_stats['operations_applied'].append('neural_quality_enhancement')
+            logger.success("✅ Neural enhancement completed")
+            
+            return enhanced_path
+            
+        except Exception as e:
+            logger.error(f"❌ Neural enhancement error: {str(e)}")
+            return None
+    
+    def _apply_traditional_enhancements(self, input_path: str, analysis: Dict, params: VideoParams) -> str:
+        """Apply traditional FFmpeg-based enhancements"""
+        logger.info("🔧 Applying traditional enhancements...")
         
         enhanced_path = os.path.join(self.temp_dir, "video_enhanced.mp4")
         filter_chain = []
@@ -623,7 +708,7 @@ class VideoQualityEnhancer:
             return output_path
 
 
-def enhance_video_quality(input_path: str, output_path: str, params: VideoParams, 
+async def enhance_video_quality(input_path: str, output_path: str, params: VideoParams, 
                          config: Optional[QualityEnhancementConfig] = None) -> Dict:
     """
     Main function to enhance video quality for MoneyPrinterTurbo content
@@ -638,7 +723,7 @@ def enhance_video_quality(input_path: str, output_path: str, params: VideoParams
         Dictionary with enhancement results
     """
     enhancer = VideoQualityEnhancer(config)
-    return enhancer.enhance_video(input_path, output_path, params)
+    return await enhancer.enhance_video(input_path, output_path, params)
 
 
 def create_quality_enhancement_config(

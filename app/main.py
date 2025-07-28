@@ -140,11 +140,27 @@ async def startup_event():
         logger.info(f"GPU resources initialized: {len(gpu_manager.available_gpus)} GPUs available")
     except Exception as e:
         logger.warning(f"GPU initialization failed: {e}")
+    
+    # Initialize MCP server
+    try:
+        from app.controllers.v1.mcp import initialize_mcp_server
+        await initialize_mcp_server()
+        logger.info("MCP server initialized successfully")
+    except Exception as e:
+        logger.warning(f"MCP server initialization failed: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("MoneyPrinterTurbo API shutting down")
+    
+    # Shutdown MCP server
+    try:
+        from app.controllers.v1.mcp import shutdown_mcp_server
+        await shutdown_mcp_server()
+        logger.info("MCP server shutdown complete")
+    except Exception as e:
+        logger.warning(f"MCP server shutdown failed: {e}")
     
     # Stop GPU monitoring
     try:
