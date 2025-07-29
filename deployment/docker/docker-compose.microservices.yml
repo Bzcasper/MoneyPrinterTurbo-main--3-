@@ -754,16 +754,10 @@ services:
 # =============================================================================
 
 # To start only core services:
-# docker-compose -f docker-compose.microservices.yml --profile core up
+# docker-compose -f docker-compose.microservices.yml up postgres-primary redis-cluster-1 user-service content-service
 
 # To start with monitoring:
-# docker-compose -f docker-compose.microservices.yml --profile monitoring up
+# docker-compose -f docker-compose.microservices.yml up postgres-primary redis-cluster-1 user-service content-service prometheus grafana
 
 # To start everything:
-# docker-compose -f docker-compose.microservices.yml --profile full up
-
-profiles:
-  - core
-  - monitoring
-  - development
-  - full
+# docker-compose -f docker-compose.microservices.yml up

@@ -11,7 +11,7 @@ import tempfile
 import psutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from queue import Queue
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 import time
 from loguru import logger
 from moviepy import (
@@ -659,7 +659,7 @@ def close_clip(clip, aggressive_cleanup: bool = False):
             MemoryMonitor.smart_gc_cleanup(force=aggressive_cleanup)
 
 
-def delete_files(files: List[str] | str):
+def delete_files(files: Union[List[str], str]):
     if isinstance(files, str):
         files = [files]
 

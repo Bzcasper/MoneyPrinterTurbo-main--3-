@@ -1,0 +1,47 @@
+# Core Web Framework - UPDATED for Python 3.13
+fastapi>=0.115.8
+uvicorn[standard]>=0.25.0
+
+# Environment & Configuration
+python-dotenv==1.0.0
+toml
+
+# Database Dependencies
+asyncpg
+supabase>=2.3.4
+
+# Async Support & HTTP
+aiohttp
+httpx==0.24.1
+asyncio-mqtt==0.16.1
+
+# Data Validation & Utilities
+pydantic<2.0
+validators==0.22.0
+email-validator==2.1.0
+typing-extensions>=4.9.0
+
+# Form Data Support
+python-multipart==0.0.6
+
+# Authentication & Security
+PyJWT==2.8.0
+redis==5.0.1
+
+# Logging & Monitoring
+loguru==0.7.2
+structlog==23.2.0
+
+# Optional: Enhanced features
+rich==13.7.0
+websockets==12.0
+
+# Testing Dependencies
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+pytest-mock>=3.12.0
+
+# Development Tools
+black>=23.11.0
+flake8>=6.1.0
+mypy>=1.7.1

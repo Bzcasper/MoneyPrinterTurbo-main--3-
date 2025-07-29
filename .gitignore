@@ -396,3 +396,4 @@ claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
 .aider*
+app/utils/mcp-on-vercel/

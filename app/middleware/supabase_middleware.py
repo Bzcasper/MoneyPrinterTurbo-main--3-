@@ -159,7 +159,7 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
             if current_time - self.last_health_check > self.health_check_interval:
                 if not connection.is_connected:
                     await connection.connect()
-                await connection._health_check()
+                await connection.health_check()
                 self.last_health_check = current_time
             
             # Make connection available in request state
