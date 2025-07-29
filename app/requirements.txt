@@ -24,3 +24,8 @@ PyJWT
 supabase
 sqlalchemy
 asyncpg
+redis-server
+faster_whisper
+imageio-ffmpeg
+torch
+imageio

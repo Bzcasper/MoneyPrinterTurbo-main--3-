@@ -11,7 +11,7 @@ services:
     container_name: moneyprinterturbo-webui-new
     ports:
       - "8501:8501"
-    command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
+    command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False", "pip install --no-cache-dir -r requirements.txt websockets" ]
     volumes:
       - ../:/MoneyPrinterTurbo:rw
       - ../storage:/MoneyPrinterTurbo/storage:rw

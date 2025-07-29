@@ -33,6 +33,7 @@ except ImportError:
     # Fallback configuration for development/testing
     class FallbackConfig:
         def __init__(self):
+            import os
             self.app = {
                 "mcp_max_connections": 100,
                 "mcp_rate_limit_requests": 100,
@@ -40,10 +41,10 @@ except ImportError:
                 "mcp_circuit_breaker_threshold": 5,
                 "mcp_circuit_breaker_timeout": 60,
                 "enable_redis": False,
-                "redis_host": "localhost",
-                "redis_port": 6379,
-                "redis_db": 0,
-                "redis_password": ""
+                "redis_host": os.getenv("REDIS_HOST", "redis"),  # Docker-friendly default
+                "redis_port": int(os.getenv("REDIS_PORT", 6379)),
+                "redis_db": int(os.getenv("REDIS_DB", 0)),
+                "redis_password": os.getenv("REDIS_PASSWORD", "")
             }
     config = FallbackConfig()
 
@@ -136,16 +137,23 @@ class MCPServer:
             recovery_timeout=config.app.get("mcp_circuit_breaker_timeout", 60)
         )
         
-        # Redis for distributed state (with robust connection management)
+        # Redis for distributed state (with centralized configuration)
         self.redis_manager = None
-        if config.app.get("enable_redis", True):  # Default to True for production
-            try:
-                # Redis connection will be established during startup
+        self.redis_config = None
+        
+        try:
+            from app.config.redis_config import get_redis_config_manager
+            config_manager = get_redis_config_manager()
+            self.redis_config = config_manager.get_database_config("cache")
+            
+            if self.redis_config.enabled:
                 logger.info("Redis enabled for MCP server - will connect during startup")
-            except Exception as e:
-                logger.warning(f"Redis configuration warning: {e}")
-        else:
-            logger.info("Redis disabled for MCP server")
+            else:
+                logger.info("Redis disabled for MCP server")
+                
+        except Exception as e:
+            logger.warning(f"Redis configuration error: {e}")
+            self.redis_config = None
         
         self._setup_capabilities()
         self._setup_middleware()
@@ -207,11 +215,14 @@ class MCPServer:
     async def _caching_middleware(self, tool_name: str, params: Dict[str, Any], 
                                 context: Dict[str, Any]) -> Dict[str, Any]:
         """Caching middleware"""
-        if self.redis_client and tool_name in ["generate_video_script", "generate_video_terms"]:
-            cache_key = f"mcp_cache:{tool_name}:{hash(json.dumps(params, sort_keys=True))}"
-            cached_result = self.redis_client.get(cache_key)
-            if cached_result:
-                context["cached_result"] = json.loads(cached_result)
+        if self.redis_manager and tool_name in ["generate_video_script", "generate_video_terms"]:
+            try:
+                cache_key = f"mcp_cache:{tool_name}:{hash(json.dumps(params, sort_keys=True))}"
+                cached_result = await self.redis_manager.get(cache_key)
+                if cached_result:
+                    context["cached_result"] = json.loads(cached_result)
+            except Exception as e:
+                logger.warning(f"Cache retrieval error: {e}")
         return params
         
     async def handle_connection(self, websocket: WebSocketServerProtocol, path: str):
@@ -430,17 +441,23 @@ class MCPServer:
         logger.info(f"🚀 Starting MCP server on {self.host}:{self.port}")
         
         # Ensure Redis is ready before starting server
-        try:
-            await ensure_redis_ready()
-            self.redis_manager = await get_redis_connection()
-            logger.success("✅ Redis connection established for MCP server")
-        except RedisConnectionError as e:
-            logger.error(f"❌ Redis connection failed: {e}")
-            if config.app.get("enable_redis", True):
-                logger.error("🛑 Cannot start MCP server without Redis")
-                raise
-            else:
-                logger.warning("⚠️ Continuing without Redis (disabled in config)")
+        if self.redis_config and self.redis_config.enabled:
+            try:
+                from app.config.redis_config import get_redis_config_manager
+                config_manager = get_redis_config_manager()
+                
+                if config_manager.validate_connection(self.redis_config):
+                    self.redis_manager = await get_redis_connection()
+                    logger.success("✅ Redis connection established for MCP server")
+                else:
+                    raise RedisConnectionError("Redis connection validation failed")
+                    
+            except Exception as e:
+                logger.error(f"❌ Redis connection failed: {e}")
+                logger.warning("⚠️ Continuing without Redis - some features may be limited")
+                self.redis_manager = None
+        else:
+            logger.info("⚠️ Redis disabled for MCP server")
         
         # Setup graceful shutdown handling
         self._setup_signal_handlers()

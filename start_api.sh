@@ -4,4 +4,4 @@ source venv/bin/activate 2>/dev/null || echo "Virtual env not found, using syste
 export PYTHONPATH="$PWD:$PYTHONPATH"
 echo "🚀 Starting MoneyPrinterTurbo API..."
 echo "API docs at: http://localhost:8080/docs"
-python3 app/main.py
+python app/main.py

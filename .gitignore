@@ -369,6 +369,8 @@ coordination/orchestration/*
 # Keep important config examples
 !config.mcp.example.toml
 
+
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json

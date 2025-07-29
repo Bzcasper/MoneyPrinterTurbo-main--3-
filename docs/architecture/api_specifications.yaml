@@ -1,0 +1,1865 @@
+# MoneyPrinterTurbo Microservices API Specifications
+# Complete OpenAPI 3.0 specifications for all 8 services
+
+# =============================================================================
+# API GATEWAY SERVICE - Port 8000
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: MoneyPrinter API Gateway
+  description: Main entry point for MoneyPrinterTurbo microservices
+  version: 1.0.0
+  contact:
+    name: MoneyPrinter Team
+    email: support@moneyprinter.com
+servers:
+  - url: https://api.moneyprinter.com/v1
+    description: Production server
+  - url: http://localhost:8000/v1
+    description: Development server
+
+paths:
+  # Video Generation Endpoints
+  /videos:
+    post:
+      summary: Create video generation request
+      tags: [Videos]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerationRequest'
+      responses:
+        '201':
+          description: Video generation initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    get:
+      summary: List user videos
+      tags: [Videos]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+      responses:
+        '200':
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  videos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VideoSummary'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+
+  /videos/{video_id}:
+    get:
+      summary: Get video details
+      tags: [Videos]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /videos/{video_id}/status:
+    get:
+      summary: Get video processing status
+      tags: [Videos]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoStatus'
+
+  /videos/{video_id}/download:
+    get:
+      summary: Download completed video
+      tags: [Videos]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: quality
+          in: query
+          schema:
+            type: string
+            enum: [original, high, medium, low]
+            default: original
+      responses:
+        '200':
+          description: Video file
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '202':
+          description: Video still processing
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      summary: Register new user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: User already exists
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required: [refresh_token]
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  # User Management Endpoints
+  /users/profile:
+    get:
+      summary: Get user profile
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    put:
+      summary: Update user profile
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /users/usage:
+    get:
+      summary: Get usage statistics
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStats'
+
+  # Asset Management Endpoints
+  /assets:
+    get:
+      summary: List available assets
+      tags: [Assets]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [image, video, audio, template]
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AssetInfo'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+    post:
+      summary: Upload new asset
+      tags: [Assets]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category:
+                  type: string
+                  enum: [image, video, audio]
+                tags:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+              required: [file, category]
+      responses:
+        '201':
+          description: Asset uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetInfo'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    VideoGenerationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        topic:
+          type: string
+          maxLength: 1000
+        style:
+          type: string
+          enum: [engaging, professional, casual, educational, entertainment]
+          default: engaging
+        duration_target:
+          type: integer
+          minimum: 15
+          maximum: 600
+          description: Target duration in seconds
+        language:
+          type: string
+          enum: [en, es, fr, de, it, pt, zh, ja, ko]
+          default: en
+        voice_settings:
+          $ref: '#/components/schemas/VoiceSettings'
+        video_settings:
+          $ref: '#/components/schemas/VideoSettings'
+        include_subtitles:
+          type: boolean
+          default: true
+        include_thumbnail:
+          type: boolean
+          default: true
+      required: [topic]
+
+    VoiceSettings:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [edge, elevenlabs, google, characterbox]
+          default: edge
+        voice_id:
+          type: string
+        speed:
+          type: number
+          minimum: 0.5
+          maximum: 2.0
+          default: 1.0
+        pitch:
+          type: number
+          minimum: -20
+          maximum: 20
+          default: 0
+        volume:
+          type: number
+          minimum: 0.1
+          maximum: 2.0
+          default: 1.0
+
+    VideoSettings:
+      type: object
+      properties:
+        resolution:
+          type: string
+          enum: ["1920x1080", "1280x720", "854x480"]
+          default: "1920x1080"
+        fps:
+          type: integer
+          enum: [24, 30, 60]
+          default: 30
+        quality:
+          type: string
+          enum: [low, medium, high, ultra]
+          default: high
+        format:
+          type: string
+          enum: [mp4, webm, avi]
+          default: mp4
+        background_music:
+          type: boolean
+          default: false
+        visual_style:
+          type: string
+          enum: [modern, classic, minimal, dynamic]
+          default: modern
+
+    VideoGenerationResponse:
+      type: object
+      properties:
+        video_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        estimated_completion:
+          type: string
+          format: date-time
+        progress_url:
+          type: string
+          format: uri
+      required: [video_id, status]
+
+    VideoStatus:
+      type: object
+      properties:
+        video_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        current_stage:
+          type: string
+          enum: [content_generation, speech_synthesis, asset_preparation, video_creation, post_processing]
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingStage'
+        error_message:
+          type: string
+        estimated_completion:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProcessingStage:
+      type: object
+      properties:
+        stage:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+
+    VideoDetails:
+      type: object
+      properties:
+        video_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        duration:
+          type: number
+        file_size:
+          type: integer
+        download_url:
+          type: string
+          format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        preview_url:
+          type: string
+          format: uri
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    VideoSummary:
+      type: object
+      properties:
+        video_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        thumbnail_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+
+    UserRegistrationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+          maxLength: 100
+        terms_accepted:
+          type: boolean
+      required: [email, password, full_name, terms_accepted]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        subscription_tier:
+          type: string
+          enum: [free, pro, enterprise]
+        is_active:
+          type: boolean
+        is_verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        preferences:
+          type: object
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 100
+        preferences:
+          type: object
+
+    UsageStats:
+      type: object
+      properties:
+        current_period:
+          type: object
+          properties:
+            videos_created:
+              type: integer
+            minutes_generated:
+              type: number
+            storage_used:
+              type: integer
+              description: Storage used in bytes
+        quota:
+          type: object
+          properties:
+            videos_limit:
+              type: integer
+            minutes_limit:
+              type: number
+            storage_limit:
+              type: integer
+        reset_date:
+          type: string
+          format: date
+
+    AssetInfo:
+      type: object
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        file_type:
+          type: string
+          enum: [image, video, audio]
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        file_size:
+          type: integer
+        dimensions:
+          type: object
+          properties:
+            width:
+              type: integer
+            height:
+              type: integer
+        duration:
+          type: number
+          description: Duration in seconds for video/audio
+        preview_url:
+          type: string
+          format: uri
+        download_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+      required: [error, message]
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+# =============================================================================
+# USER MANAGEMENT SERVICE - Port 8001
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: User Management Service
+  description: User authentication, profiles, and account management
+  version: 1.0.0
+servers:
+  - url: http://localhost:8001/v1
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                full_name:
+                  type: string
+                terms_accepted:
+                  type: boolean
+              required: [email, password, full_name, terms_accepted]
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+
+  /auth/verify-email:
+    post:
+      summary: Verify email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+              required: [token]
+      responses:
+        '200':
+          description: Email verified
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        '200':
+          description: Authentication successful
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /users/{user_id}:
+    get:
+      summary: Get user details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+    put:
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                preferences:
+                  type: object
+      responses:
+        '200':
+          description: Profile updated
+
+  /users/{user_id}/api-keys:
+    get:
+      summary: List user API keys
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of API keys
+    post:
+      summary: Create new API key
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+              required: [name]
+      responses:
+        '201':
+          description: API key created
+
+  /users/{user_id}/usage:
+    get:
+      summary: Get user usage statistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Usage statistics
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# CONTENT GENERATION SERVICE - Port 8002
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Content Generation Service
+  description: AI-powered script and content generation
+  version: 1.0.0
+servers:
+  - url: http://localhost:8002/v1
+
+paths:
+  /content/generate:
+    post:
+      summary: Generate content from topic
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+                style:
+                  type: string
+                  enum: [engaging, professional, casual, educational]
+                duration_target:
+                  type: integer
+                language:
+                  type: string
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                tone:
+                  type: string
+                target_audience:
+                  type: string
+              required: [topic]
+      responses:
+        '200':
+          description: Content generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    type: string
+                    format: uuid
+                  script:
+                    type: string
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  keywords:
+                    type: array
+                    items:
+                      type: string
+                  sections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        text:
+                          type: string
+                        timing:
+                          type: object
+                  estimated_duration:
+                    type: integer
+
+  /content/enhance:
+    post:
+      summary: Enhance existing content
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                enhancement_type:
+                  type: string
+                  enum: [seo, engagement, clarity, length]
+                target_improvements:
+                  type: array
+                  items:
+                    type: string
+              required: [content, enhancement_type]
+      responses:
+        '200':
+          description: Content enhanced
+
+  /content/templates:
+    get:
+      summary: List available content templates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: style
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of templates
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# TTS SERVICE - Port 8003
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Text-to-Speech Service
+  description: Multi-provider voice synthesis service
+  version: 1.0.0
+servers:
+  - url: http://localhost:8003/v1
+
+paths:
+  /tts/synthesize:
+    post:
+      summary: Synthesize speech from text
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                voice_config:
+                  type: object
+                  properties:
+                    provider:
+                      type: string
+                      enum: [edge, elevenlabs, google, characterbox]
+                    voice_id:
+                      type: string
+                    speed:
+                      type: number
+                    pitch:
+                      type: number
+                    volume:
+                      type: number
+                provider:
+                  type: string
+                  enum: [edge, elevenlabs, google, characterbox]
+                  default: edge
+              required: [text]
+      responses:
+        '200':
+          description: Speech synthesized
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url:
+                    type: string
+                    format: uri
+                  duration:
+                    type: number
+                  format:
+                    type: string
+                  sample_rate:
+                    type: integer
+
+  /tts/voices:
+    get:
+      summary: List available voices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [edge, elevenlabs, google, characterbox]
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: gender
+          in: query
+          schema:
+            type: string
+            enum: [male, female, neutral]
+      responses:
+        '200':
+          description: List of available voices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  voices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        voice_id:
+                          type: string
+                        name:
+                          type: string
+                        language:
+                          type: string
+                        gender:
+                          type: string
+                        provider:
+                          type: string
+                        sample_url:
+                          type: string
+                          format: uri
+
+  /tts/batch:
+    post:
+      summary: Batch synthesize multiple text segments
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                segments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      text:
+                        type: string
+                      voice_config:
+                        type: object
+                voice_config:
+                  type: object
+                  description: Default voice config for all segments
+              required: [segments]
+      responses:
+        '202':
+          description: Batch processing started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  estimated_completion:
+                    type: string
+                    format: date-time
+
+  /tts/batch/{batch_id}/status:
+    get:
+      summary: Get batch processing status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Batch status
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# VIDEO PROCESSING SERVICE - Port 8004
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Video Processing Service
+  description: Video creation, editing, and optimization
+  version: 1.0.0
+servers:
+  - url: http://localhost:8004/v1
+
+paths:
+  /video/create:
+    post:
+      summary: Create video from components
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                script_segments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      text:
+                        type: string
+                      timing:
+                        type: object
+                      visual_cues:
+                        type: array
+                        items:
+                          type: string
+                audio_files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      segment_id:
+                        type: string
+                      audio_url:
+                        type: string
+                        format: uri
+                visual_assets:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                video_config:
+                  type: object
+                  properties:
+                    resolution:
+                      type: string
+                    fps:
+                      type: integer
+                    quality:
+                      type: string
+                    include_subtitles:
+                      type: boolean
+              required: [project_id, script_segments, audio_files]
+      responses:
+        '202':
+          description: Video creation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  video_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  estimated_completion:
+                    type: string
+                    format: date-time
+
+  /video/{video_id}/status:
+    get:
+      summary: Get video processing status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video processing status
+
+  /video/{video_id}/preview:
+    get:
+      summary: Get video preview
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video preview
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+
+  /video/optimize:
+    post:
+      summary: Optimize video file
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                video_url:
+                  type: string
+                  format: uri
+                optimization_preset:
+                  type: string
+                  enum: [web, mobile, high_quality, compression]
+                target_size:
+                  type: integer
+                  description: Target file size in bytes
+              required: [video_url]
+      responses:
+        '202':
+          description: Optimization started
+
+  /video/effects:
+    get:
+      summary: List available video effects
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of available effects
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# MATERIAL MANAGEMENT SERVICE - Port 8005
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Material Management Service
+  description: Asset storage, organization, and delivery
+  version: 1.0.0
+servers:
+  - url: http://localhost:8005/v1
+
+paths:
+  /assets:
+    get:
+      summary: Search and list assets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [image, video, audio, template]
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of assets
+    post:
+      summary: Upload new asset
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category:
+                  type: string
+                  enum: [image, video, audio]
+                tags:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+                is_public:
+                  type: boolean
+                  default: false
+              required: [file, category]
+      responses:
+        '201':
+          description: Asset uploaded
+
+  /assets/{asset_id}:
+    get:
+      summary: Get asset details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Asset details
+    put:
+      summary: Update asset metadata
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+                is_public:
+                  type: boolean
+      responses:
+        '200':
+          description: Asset updated
+    delete:
+      summary: Delete asset
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Asset deleted
+
+  /assets/{asset_id}/download:
+    get:
+      summary: Download asset file
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: variant
+          in: query
+          schema:
+            type: string
+            enum: [original, thumbnail, preview, optimized]
+            default: original
+      responses:
+        '200':
+          description: Asset file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /collections:
+    get:
+      summary: List asset collections
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of collections
+    post:
+      summary: Create new collection
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+              required: [name]
+      responses:
+        '201':
+          description: Collection created
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# ORCHESTRATION SERVICE - Port 8006
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Orchestration Service
+  description: Workflow management and service coordination
+  version: 1.0.0
+servers:
+  - url: http://localhost:8006/v1
+
+paths:
+  /workflows/video-generation:
+    post:
+      summary: Start video generation workflow
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                project_config:
+                  type: object
+                priority:
+                  type: string
+                  enum: [low, normal, high, urgent]
+                  default: normal
+              required: [user_id, project_config]
+      responses:
+        '202':
+          description: Workflow started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflow_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  estimated_completion:
+                    type: string
+                    format: date-time
+
+  /workflows/{workflow_id}:
+    get:
+      summary: Get workflow status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow status
+    delete:
+      summary: Cancel workflow
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow cancelled
+
+  /workflows/{workflow_id}/retry:
+    post:
+      summary: Retry failed workflow
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Workflow restarted
+
+  /tasks:
+    get:
+      summary: List active tasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+        - name: workflow_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of tasks
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+# =============================================================================
+# NOTIFICATION SERVICE - Port 8007
+# =============================================================================
+---
+openapi: 3.0.3
+info:
+  title: Notification Service
+  description: Real-time notifications and communications
+  version: 1.0.0
+servers:
+  - url: http://localhost:8007/v1
+
+paths:
+  /notifications:
+    get:
+      summary: List user notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [unread, read, all]
+            default: all
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of notifications
+
+  /notifications/{notification_id}/read:
+    post:
+      summary: Mark notification as read
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+
+  /notifications/preferences:
+    get:
+      summary: Get notification preferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Notification preferences
+    put:
+      summary: Update notification preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_notifications:
+                  type: boolean
+                push_notifications:
+                  type: boolean
+                notification_types:
+                  type: object
+      responses:
+        '200':
+          description: Preferences updated
+
+  /websocket:
+    get:
+      summary: WebSocket endpoint for real-time notifications
+      description: Connect to receive real-time notifications
+      responses:
+        '101':
+          description: WebSocket connection established
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer

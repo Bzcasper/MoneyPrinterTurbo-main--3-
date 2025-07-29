@@ -1,0 +1,10 @@
+{
+  "default": [
+    {
+      "key": "test-key",
+      "value": "Sample value for persistence testing",
+      "namespace": "default",
+      "timestamp": 1753781702154
+    }
+  ]
+}

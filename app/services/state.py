@@ -60,10 +60,28 @@ class MemoryState(BaseState):
 
 # Redis state management
 class RedisState(BaseState):
-    def __init__(self, host="localhost", port=6379, db=0, password=None):
+    def __init__(self, config=None):
         import redis
-
-        self._redis = redis.StrictRedis(host=host, port=port, db=db, password=password)
+        from app.config.redis_config import get_redis_config
+        
+        # Use centralized Redis configuration
+        if config is None:
+            from app.config.redis_config import get_redis_config_manager
+            config_manager = get_redis_config_manager()
+            config = config_manager.get_database_config("state")
+        
+        if not config.enabled:
+            raise ConnectionError("Redis is disabled in configuration")
+        
+        try:
+            # Use connection kwargs from centralized config
+            self._redis = redis.StrictRedis(**config.connection_kwargs)
+            
+            # Test connection
+            self._redis.ping()
+            
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to Redis: {e}")
 
     def get_all_tasks(self, page: int, page_size: int):
         start = (page - 1) * page_size
@@ -143,17 +161,23 @@ class RedisState(BaseState):
         return value_str
 
 
-# Global state
-_enable_redis = config.app.get("enable_redis", False)
-_redis_host = config.app.get("redis_host", "localhost")
-_redis_port = config.app.get("redis_port", 6379)
-_redis_db = config.app.get("redis_db", 0)
-_redis_password = config.app.get("redis_password", None)
+# Global state initialization with centralized Redis config
+def _initialize_state():
+    """Initialize global state based on configuration"""
+    try:
+        from app.config.redis_config import get_redis_config_manager
+        
+        config_manager = get_redis_config_manager()
+        redis_config = config_manager.get_database_config("state")
+        
+        if redis_config.enabled and config_manager.validate_connection(redis_config):
+            return RedisState(redis_config)
+        else:
+            print("Redis not available or disabled, using in-memory state")
+            return MemoryState()
+            
+    except Exception as e:
+        print(f"Failed to initialize Redis state: {e}, falling back to memory state")
+        return MemoryState()
 
-state = (
-    RedisState(
-        host=_redis_host, port=_redis_port, db=_redis_db, password=_redis_password
-    )
-    if _enable_redis
-    else MemoryState()
-)
+state = _initialize_state()

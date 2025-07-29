@@ -1,0 +1,227 @@
+# Testing Requirements for MoneyPrinterTurbo Microservices
+# Comprehensive testing infrastructure dependencies
+
+# Core Testing Framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-xdist==3.3.1  # Parallel test execution
+pytest-timeout==2.1.0
+pytest-cov==4.1.0  # Coverage reporting
+pytest-mock==3.12.0
+pytest-html==4.1.1  # HTML test reports
+pytest-json-report==1.5.0
+
+# HTTP Testing
+httpx==0.25.2  # Async HTTP client
+requests-mock==1.11.0
+responses==0.24.1
+
+# Database Testing
+pytest-postgresql==5.0.0
+pytest-redis==3.0.2
+sqlalchemy-utils==0.41.1
+alembic==1.12.1
+factories==1.0.0  # Test data factories
+
+# Mock and Fixtures
+factory-boy==3.3.0
+faker==20.1.0
+freezegun==1.2.2  # Time mocking
+fakeredis==2.20.0
+
+# Performance Testing
+locust==2.17.0  # Load testing
+pytest-benchmark==4.0.0
+memory-profiler==0.61.0
+py-spy==0.3.14  # Profiling
+
+# Async Testing
+asynctest==0.13.0
+aioresponses==0.7.4
+
+# API Testing
+fastapi[testing]==0.104.1
+starlette-testclient==0.2.1
+
+# Video/Media Testing (for video processing tests)
+opencv-python==4.8.1.78
+moviepy==1.0.3
+pillow==10.1.0
+
+# Chaos Engineering
+chaos-toolkit==1.15.0
+chaostoolkit-kubernetes==0.26.1  # If using K8s
+toxiproxy-python==0.1.0  # Network chaos
+
+# Reporting and Monitoring
+allure-pytest==2.13.2
+pytest-clarity==1.0.1
+pytest-sugar==0.9.7  # Pretty test output
+
+# Security Testing
+bandit==1.7.5
+safety==2.3.5
+semgrep==1.45.0
+
+# Code Quality
+flake8==6.1.0
+black==23.11.0
+isort==5.12.0
+mypy==1.7.1
+pylint==3.0.3
+
+# Documentation Testing
+pytest-doctestplus==1.0.0
+
+# Test Data Management
+mimesis==11.1.0  # Advanced fake data
+hypothesis==6.88.4  # Property-based testing
+
+# WebSocket Testing (for real-time features)  
+websockets==12.0
+pytest-websocket==0.1.0
+
+# Container Testing
+testcontainers==3.7.1
+docker==6.1.3
+
+# Environment Management
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+
+# Utilities
+psutil==5.9.6  # System monitoring
+click==8.1.7  # CLI testing
+rich==13.7.0  # Rich console output
+tabulate==0.9.0  # Table formatting
+
+# Development Dependencies
+ipython==8.17.2
+jupyter==1.0.0
+pdbpp==0.10.3  # Enhanced debugger
+
+# Type Checking
+types-requests==2.31.0.10
+types-redis==4.6.0.11
+types-psutil==5.9.5.17
+
+# Linting and Formatting
+pre-commit==3.5.0
+autoflake==2.2.1
+pyupgrade==3.15.0
+
+# Test Runners and CI/CD Integration
+tox==4.11.4
+coverage[toml]==7.3.2
+codecov==2.1.13
+
+# Additional Testing Utilities
+parameterized==0.9.0
+nose2==0.13.0  # Alternative test runner
+green==4.0.2  # Colorful test runner
+
+# API Documentation Testing
+openapi-spec-validator==0.7.1
+swagger-spec-validator==3.0.3
+
+# Load Testing Extensions
+molotov==2.6  # Alternative to Locust
+artillery==1.7.0  # Node-based load testing (if needed)
+
+# Mock Services
+wiremock==2.35.0
+moto==4.2.14  # AWS service mocking
+
+# Database Migration Testing
+pytest-alembic==0.10.7
+
+# Parallel Execution
+pytest-parallel==0.1.1
+pytest-concurrent==0.1.1
+
+# Test Utilities
+sure==2.0.1  # Fluent assertions
+expects==0.9.0  # BDD-style assertions
+hamcrest==2.1.0  # Matcher library
+
+# Plugin Management
+pluggy==1.3.0
+
+# Configuration Testing
+configparser2==4.0.0
+dynaconf==3.2.4
+
+# Time and Date Testing
+pendulum==2.1.2
+arrow==1.3.0
+
+# Logging Testing
+loguru==0.7.2  # Enhanced logging (matches main app)
+structlog==23.2.0
+
+# Network Testing
+netifaces==0.11.0
+scapy==2.5.0  # Advanced network testing
+
+# Process Testing
+subprocess32==3.5.4  # Enhanced subprocess
+pexpect==4.8.0  # Process interaction
+
+# File System Testing
+watchdog==3.0.0
+pathlib2==2.3.7
+
+# Serialization Testing
+msgpack==1.0.7
+orjson==3.9.10
+
+# Cryptography Testing (for security tests)
+cryptography==41.0.7
+jwcrypto==1.5.0
+
+# Rate Limiting Testing
+redis-py-cluster==2.1.3
+aioredis==2.0.1
+
+# Message Queue Testing
+kombu==5.3.4  # Celery's messaging library
+dramatiq==1.15.0
+
+# Monitoring and Metrics Testing
+prometheus-client==0.19.0
+statsd==4.0.1
+
+# Health Check Testing
+healthcheck==1.3.3
+
+# Email Testing (if email features exist)
+mailer==0.8.1
+premailer==3.10.0
+
+# Internationalization Testing
+babel==2.13.1
+pytz==2023.3
+
+# XML/JSON Testing
+xmltodict==0.13.0
+jsonschema==4.20.0
+lxml==4.9.3
+
+# Image Processing Testing (for thumbnails, etc.)
+wand==0.6.13
+pypdf2==3.0.1
+
+# Audio Testing (for TTS validation)
+pydub==0.25.1
+librosa==0.10.1
+
+# Machine Learning Testing (if ML features exist)
+numpy==1.25.2
+scikit-learn==1.3.2
+
+# API Rate Limiting
+ratelimit==2.2.1
+slowapi==0.1.9
+
+# Custom Assertions
+assertpy==1.1
