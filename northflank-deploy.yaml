@@ -1,0 +1,425 @@
+# Northflank Deployment Configuration for MoneyPrinterTurbo
+# This file contains the complete deployment configuration for Northflank cloud platform
+
+apiVersion: northflank.io/v1alpha1
+kind: Project
+metadata:
+  name: moneyprinterturbo
+  description: "AI-powered video generation platform with swarm intelligence"
+spec:
+  region: europe-west-1  # Change as needed
+  
+---
+apiVersion: northflank.io/v1alpha1
+kind: Secret
+metadata:
+  name: mpt-secrets
+  project: moneyprinterturbo
+spec:
+  secrets:
+    # Database credentials
+    DATABASE_URL: postgresql://user:password@postgres-service:5432/moneyprinter
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: your-secure-password
+    POSTGRES_DB: mpt
+    
+    # Redis configuration
+    REDIS_HOST: redis-service
+    REDIS_PORT: "6379"
+    REDIS_PASSWORD: your-redis-password
+    
+    # Application secrets
+    JWT_SECRET: your-jwt-secret-key
+    MCP_JWT_SECRET: your-mcp-secret-key
+    
+    # External API keys
+    PEXELS_API_KEY: your-pexels-api-key
+    PIXABAY_API_KEY: your-pixabay-api-key
+    OPENAI_API_KEY: your-openai-api-key
+    
+    # Supabase (optional)
+    SUPABASE_URL: https://your-project.supabase.co
+    SUPABASE_ANON_KEY: your-supabase-anon-key
+    SUPABASE_SERVICE_ROLE_KEY: your-supabase-service-key
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: Service
+metadata:
+  name: postgres
+  project: moneyprinterturbo
+spec:
+  type: postgres
+  version: "15"
+  billing:
+    plan: nf-compute-10  # Adjust based on needs
+  storage:
+    size: 20Gi
+  environment:
+    POSTGRES_DB: 
+      from: secret
+      secret: mpt-secrets
+      key: POSTGRES_DB
+    POSTGRES_USER:
+      from: secret
+      secret: mpt-secrets
+      key: POSTGRES_USER
+    POSTGRES_PASSWORD:
+      from: secret
+      secret: mpt-secrets
+      key: POSTGRES_PASSWORD
+  healthcheck:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: Service
+metadata:
+  name: redis
+  project: moneyprinterturbo
+spec:
+  type: redis
+  version: "7"
+  billing:
+    plan: nf-compute-5  # Adjust based on needs
+  configuration:
+    maxmemory: 512mb
+    maxmemory-policy: allkeys-lru
+    appendonly: "yes"
+    save: "60 1000"
+  environment:
+    REDIS_PASSWORD:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_PASSWORD
+  healthcheck:
+    enabled: true
+    command: ["redis-cli", "ping"]
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: Service
+metadata:
+  name: api
+  project: moneyprinterturbo
+spec:
+  type: deployment
+  billing:
+    plan: nf-compute-20  # Adjust based on CPU/memory needs
+  deployment:
+    instances: 2  # Start with 2 instances for HA
+    docker:
+      configType: dockerfile
+      dockerfile:
+        buildEngine: kaniko
+        dockerFile: |
+          FROM python:3.11-slim
+
+          # System dependencies
+          RUN apt-get update && apt-get install -y \
+              ffmpeg \
+              imagemagick \
+              curl \
+              build-essential \
+              && rm -rf /var/lib/apt/lists/*
+
+          # Set work directory
+          WORKDIR /MoneyPrinterTurbo
+
+          # Install Python dependencies
+          COPY app/requirements.txt ./
+          RUN pip install --no-cache-dir -r requirements.txt
+
+          # Copy application code
+          COPY . .
+
+          # Create non-root user
+          RUN useradd -m -u 1000 appuser && \
+              chown -R appuser:appuser /MoneyPrinterTurbo
+          USER appuser
+
+          # Health check
+          HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+              CMD curl -f http://localhost:8080/health || exit 1
+
+          EXPOSE 8080
+          CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+      
+  ports:
+    - name: http
+      port: 8080
+      protocol: HTTP
+      public: true
+      
+  environment:
+    # Application configuration
+    HOST: "0.0.0.0"
+    PORT: "8080"
+    ENVIRONMENT: production
+    PYTHONPATH: /MoneyPrinterTurbo
+    
+    # Database
+    DATABASE_URL:
+      from: secret
+      secret: mpt-secrets
+      key: DATABASE_URL
+      
+    # Redis
+    REDIS_HOST:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_HOST
+    REDIS_PORT:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_PORT
+    REDIS_PASSWORD:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_PASSWORD
+    ENABLE_REDIS: "true"
+    
+    # Security
+    JWT_SECRET:
+      from: secret
+      secret: mpt-secrets
+      key: JWT_SECRET
+    TRUSTED_HOSTS: "*.northflank.app,localhost,127.0.0.1"
+    ALLOWED_ORIGINS: "https://*.northflank.app"
+    
+    # External APIs
+    PEXELS_API_KEY:
+      from: secret
+      secret: mpt-secrets
+      key: PEXELS_API_KEY
+    PIXABAY_API_KEY:
+      from: secret
+      secret: mpt-secrets
+      key: PIXABAY_API_KEY
+    OPENAI_API_KEY:
+      from: secret
+      secret: mpt-secrets
+      key: OPENAI_API_KEY
+      
+  dependencies:
+    - postgres
+    - redis
+    
+  healthcheck:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    
+  scaling:
+    autoscaling:
+      enabled: true
+      minInstances: 2
+      maxInstances: 10
+      targetCPU: 70
+      targetMemory: 80
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: Service
+metadata:
+  name: webui
+  project: moneyprinterturbo
+spec:
+  type: deployment
+  billing:
+    plan: nf-compute-10  # Smaller plan for frontend
+  deployment:
+    instances: 2
+    docker:
+      configType: dockerfile
+      dockerfile:
+        buildEngine: kaniko
+        dockerFile: |
+          FROM python:3.11-slim
+
+          # System dependencies
+          RUN apt-get update && apt-get install -y \
+              curl \
+              && rm -rf /var/lib/apt/lists/*
+
+          # Set work directory
+          WORKDIR /MoneyPrinterTurbo
+
+          # Install Python dependencies
+          COPY app/requirements.txt ./
+          RUN pip install --no-cache-dir -r requirements.txt
+
+          # Copy application code
+          COPY . .
+
+          # Create non-root user
+          RUN useradd -m -u 1000 appuser && \
+              chown -R appuser:appuser /MoneyPrinterTurbo
+          USER appuser
+
+          EXPOSE 8501
+          CMD ["streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False", "--server.port=8501"]
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+          
+  ports:
+    - name: http
+      port: 8501
+      protocol: HTTP
+      public: true
+      
+  environment:
+    # Application configuration
+    HOST: "0.0.0.0"
+    PORT: "8501"
+    PYTHONPATH: /MoneyPrinterTurbo
+    STREAMLIT_SERVER_FILE_WATCHER_TYPE: none
+    
+    # Database
+    DATABASE_URL:
+      from: secret
+      secret: mpt-secrets
+      key: DATABASE_URL
+      
+    # Supabase (optional)
+    SUPABASE_URL:
+      from: secret
+      secret: mpt-secrets
+      key: SUPABASE_URL
+    SUPABASE_ANON_KEY:
+      from: secret
+      secret: mpt-secrets
+      key: SUPABASE_ANON_KEY
+      
+  dependencies:
+    - api
+    
+  healthcheck:
+    enabled: true
+    path: /
+    initialDelaySeconds: 45
+    periodSeconds: 30
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: Service
+metadata:
+  name: mcp-server
+  project: moneyprinterturbo
+spec:
+  type: deployment
+  billing:
+    plan: nf-compute-15  # Medium plan for MCP server
+  deployment:
+    instances: 2
+    docker:
+      configType: dockerfile
+      dockerfile:
+        buildEngine: kaniko
+        dockerFile: |
+          FROM python:3.11-slim
+
+          # System dependencies
+          RUN apt-get update && apt-get install -y \
+              curl \
+              netcat-openbsd \
+              && rm -rf /var/lib/apt/lists/*
+
+          # Set work directory
+          WORKDIR /MoneyPrinterTurbo
+
+          # Install Python dependencies
+          COPY app/requirements.txt ./
+          RUN pip install --no-cache-dir -r requirements.txt websockets
+
+          # Copy application code
+          COPY . .
+
+          # Create non-root user
+          RUN useradd -m -u 1000 appuser && \
+              chown -R appuser:appuser /MoneyPrinterTurbo
+          USER appuser
+
+          # Health check for WebSocket
+          HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+              CMD nc -z localhost 8081 || exit 1
+
+          EXPOSE 8081
+          CMD ["python", "run_mcp_server.py"]
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+          
+  ports:
+    - name: websocket
+      port: 8081
+      protocol: HTTP  # WebSocket over HTTP
+      public: true
+      
+  environment:
+    # MCP Configuration
+    MCP_HOST: "0.0.0.0"
+    MCP_PORT: "8081"
+    PYTHONPATH: /MoneyPrinterTurbo
+    PYTHONUNBUFFERED: "1"
+    ENVIRONMENT: production
+    
+    # Redis
+    REDIS_HOST:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_HOST
+    REDIS_PORT:
+      from: secret
+      secret: mpt-secrets
+      key: REDIS_PORT
+    REDIS_PASSWORD:
+      from: secret
+      secret: mcp-secrets
+      key: REDIS_PASSWORD
+    ENABLE_REDIS: "true"
+    
+    # Security
+    MCP_JWT_SECRET:
+      from: secret
+      secret: mpt-secrets
+      key: MCP_JWT_SECRET
+      
+  dependencies:
+    - redis
+    
+  healthcheck:
+    enabled: true
+    command: ["nc", "-z", "localhost", "8081"]
+    initialDelaySeconds: 60
+    periodSeconds: 30
+
+---
+apiVersion: northflank.io/v1alpha1
+kind: BuildService
+metadata:
+  name: build-service
+  project: moneyprinterturbo
+spec:
+  vcs:
+    projectUrl: https://github.com/your-username/MoneyPrinterTurbo  # Replace with your repo
+    projectType: github
+    accountLogin: your-username  # Replace with your GitHub username
+    projectBranch: main
+  buildSettings:
+    dockerfile:
+      buildEngine: kaniko
+      useCache: true
+      dockerFilePath: ./app/Dockerfile
+  buildArguments:
+    BUILDKIT_INLINE_CACHE: "1"
+  environment:
+    DOCKER_BUILDKIT: "1"
