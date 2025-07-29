@@ -4,32 +4,31 @@ x-common-volumes: &common-volumes
 
 services:
   webui:
-    build:
-      context: ..
-      dockerfile: app/Dockerfile
-    image: moneyprinterturbo-webui:latest
-    container_name: moneyprinterturbo-webui-new
-    ports:
-      - "8501:8501"
-    command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False", "pip install --no-cache-dir -r requirements.txt websockets" ]
-    volumes:
-      - ../:/MoneyPrinterTurbo:rw
-      - ../storage:/MoneyPrinterTurbo/storage:rw
-    restart: unless-stopped
-    environment:
-      - PYTHONPATH=/MoneyPrinterTurbo
-      - HOST=0.0.0.0
-      - PORT=8501
-      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    
+  build:
+    context: ..
+    dockerfile: app/Dockerfile
+  image: moneyprinterturbo-webui:latest
+  container_name: moneyprinterturbo-webui-new
+  ports:
+    - "8501:8501"
+  command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
+  volumes:
+    - ../:/MoneyPrinterTurbo:rw
+    - ../storage:/MoneyPrinterTurbo/storage:rw
+  restart: unless-stopped
+  environment:
+    - PYTHONPATH=/MoneyPrinterTurbo
+    - HOST=0.0.0.0
+    - PORT=8501
+    - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+    - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+    - SUPABASE_URL=${SUPABASE_URL}
+    - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3" 
   api:
     build:
       context: ..
