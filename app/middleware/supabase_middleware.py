@@ -20,6 +20,7 @@ from loguru import logger
 from app.database.connection import get_supabase_connection
 from app.models.exception import DatabaseConnectionError
 from app.mcp.supabase_tools import supabase_mcp_tools
+from app.utils.redis_connection import get_redis_connection, RedisConnectionError
 
 
 class SupabaseMiddleware(BaseHTTPMiddleware):
@@ -34,10 +35,11 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
     - Health monitoring
     """
     
-    def __init__(self, app, enable_auth: bool = True, enable_logging: bool = True):
+    def __init__(self, app, enable_auth: bool = True, enable_logging: bool = True, enable_redis: bool = True):
         super().__init__(app)
         self.enable_auth = enable_auth
         self.enable_logging = enable_logging
+        self.enable_redis = enable_redis
         self.connection_pool = {}
         self.health_check_interval = 60  # seconds
         self.last_health_check = 0
@@ -57,6 +59,10 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
             
             # Ensure Supabase connection is available
             await self._ensure_supabase_connection(request)
+            
+            # Ensure Redis connection is available (if enabled)
+            if self.enable_redis:
+                await self._ensure_redis_connection(request)
             
             # Validate authentication if enabled
             if self.enable_auth and self._requires_auth(request):
@@ -96,6 +102,17 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
                 content={
                     "status": 503,
                     "message": "Database service unavailable",
+                    "request_id": request_id,
+                    "path": str(request.url)
+                }
+            )
+        except RedisConnectionError as e:
+            logger.error(f"Redis connection error for request {request_id}: {str(e)}")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": 503,
+                    "message": "Cache service unavailable",
                     "request_id": request_id,
                     "path": str(request.url)
                 }
@@ -155,6 +172,26 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"Failed to ensure Supabase connection: {str(e)}")
             raise SupabaseConnectionError(f"Connection setup failed: {str(e)}")
+    
+    async def _ensure_redis_connection(self, request: Request):
+        """Ensure Redis connection is available for the request."""
+        try:
+            redis_manager = await get_redis_connection()
+            
+            # Perform health check
+            if not await redis_manager.health_check():
+                raise RedisConnectionError("Redis health check failed")
+            
+            # Make Redis available in request state
+            request.state.redis = redis_manager
+            request.state.redis_client = await redis_manager.get_async_client()
+            
+        except Exception as e:
+            logger.error(f"Failed to ensure Redis connection: {str(e)}")
+            if self.enable_redis:
+                raise RedisConnectionError(f"Redis connection setup failed: {str(e)}")
+            else:
+                logger.warning("Redis connection failed but not required")
     
     def _requires_auth(self, request: Request) -> bool:
         """Determine if route requires authentication."""
@@ -320,6 +357,20 @@ async def get_mcp_tools_from_request(request: Request):
     raise HTTPException(status_code=503, detail="MCP tools not available")
 
 
+async def get_redis_from_request(request: Request):
+    """Get Redis manager from request state."""
+    if hasattr(request.state, 'redis'):
+        return request.state.redis
+    raise HTTPException(status_code=503, detail="Redis connection not available")
+
+
+async def get_redis_client_from_request(request: Request):
+    """Get Redis client from request state."""
+    if hasattr(request.state, 'redis_client') and request.state.redis_client:
+        return request.state.redis_client
+    raise HTTPException(status_code=503, detail="Redis client not available")
+
+
 def get_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
     """Get authenticated user from request state."""
     return getattr(request.state, 'user', None)
@@ -331,5 +382,7 @@ __all__ = [
     "get_supabase_from_request",
     "get_supabase_client_from_request", 
     "get_mcp_tools_from_request",
+    "get_redis_from_request",
+    "get_redis_client_from_request",
     "get_user_from_request"
 ]

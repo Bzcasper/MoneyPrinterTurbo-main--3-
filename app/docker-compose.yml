@@ -77,26 +77,37 @@ services:
         max-size: "10m"
         max-file: "3"
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: moneyprinterturbo-redis-new
-    restart: always
+    restart: unless-stopped
     # Expose Redis port internally only to avoid host port conflicts
     expose:
       - "6379"
     command: [
       "redis-server",
-      "--maxmemory", "256mb",
+      "--maxmemory", "512mb",
       "--maxmemory-policy", "allkeys-lru",
       "--appendonly", "yes",
-      "--save", "60", "1000"
+      "--save", "60", "1000",
+      "--tcp-keepalive", "60",
+      "--timeout", "0",
+      "--tcp-backlog", "511"
     ]
     volumes:
       - redis_data:/data
+    environment:
+      - REDIS_REPLICATION_MODE=master
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mcp-server:
     build:
@@ -107,8 +118,7 @@ services:
     ports:
       - "8081:8081"
     command: [
-      "python3", "-c",
-      "import asyncio; from app.mcp.server import MCPServer; server = MCPServer('0.0.0.0', 8081); asyncio.run(server.start_server())"
+      "/MoneyPrinterTurbo/scripts/start_mcp_server.sh"
     ]
     volumes:
       - ../:/MoneyPrinterTurbo:rw
@@ -121,15 +131,18 @@ services:
       - ENVIRONMENT=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_DB=0
       - ENABLE_REDIS=true
+      - PYTHONUNBUFFERED=1
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "python3", "-c", "import websockets; import asyncio; asyncio.run(websockets.connect('ws://localhost:8081').close())"]
+      test: ["CMD", "python3", "-c", "import asyncio; import websockets; import sys; sys.exit(0 if asyncio.run(websockets.connect('ws://localhost:8081').close()) is None else 1)"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
     logging:
       driver: "json-file"
       options:

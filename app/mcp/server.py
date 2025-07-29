@@ -24,6 +24,7 @@ from .protocol import (
 from .tools import MoneyPrinterMCPTools
 from .auth import MCPAuthenticator
 from .discovery import MCPServiceRegistry
+from app.utils.redis_connection import get_redis_connection, ensure_redis_ready, RedisConnectionError
 
 # Import config module with fallback
 try:
@@ -135,14 +136,16 @@ class MCPServer:
             recovery_timeout=config.app.get("mcp_circuit_breaker_timeout", 60)
         )
         
-        # Redis for distributed state (optional)
-        self.redis_client = None
-        if config.app.get("enable_redis", False):
+        # Redis for distributed state (with robust connection management)
+        self.redis_manager = None
+        if config.app.get("enable_redis", True):  # Default to True for production
             try:
-                redis_url = f"redis://:{config.app.get('redis_password', '')}@{config.app.get('redis_host', 'redis')}:{config.app.get('redis_port', 6379)}/{config.app.get('redis_db', 0)}"
-                self.redis_client = redis.Redis.from_url(redis_url)
+                # Redis connection will be established during startup
+                logger.info("Redis enabled for MCP server - will connect during startup")
             except Exception as e:
-                logger.warning(f"Failed to connect to Redis for MCP: {e}")
+                logger.warning(f"Redis configuration warning: {e}")
+        else:
+            logger.info("Redis disabled for MCP server")
         
         self._setup_capabilities()
         self._setup_middleware()
@@ -422,9 +425,25 @@ class MCPServer:
                 await self.connection_manager.remove_connection(connection_id)
                 
     async def start_server(self):
-        """Start the MCP server"""
+        """Start the MCP server with Redis health check"""
         self.start_time = time.time()
-        logger.info(f"Starting MCP server on {self.host}:{self.port}")
+        logger.info(f"🚀 Starting MCP server on {self.host}:{self.port}")
+        
+        # Ensure Redis is ready before starting server
+        try:
+            await ensure_redis_ready()
+            self.redis_manager = await get_redis_connection()
+            logger.success("✅ Redis connection established for MCP server")
+        except RedisConnectionError as e:
+            logger.error(f"❌ Redis connection failed: {e}")
+            if config.app.get("enable_redis", True):
+                logger.error("🛑 Cannot start MCP server without Redis")
+                raise
+            else:
+                logger.warning("⚠️ Continuing without Redis (disabled in config)")
+        
+        # Setup graceful shutdown handling
+        self._setup_signal_handlers()
         
         # Register with service discovery
         await self.service_registry.register_service(
@@ -433,18 +452,91 @@ class MCPServer:
             {
                 "capabilities": [cap.model_dump() for cap in self.protocol_handler.get_capabilities()],
                 "tools": len(self.tools.registry.get_tools()),
-                "version": "1.0.0"
+                "version": "1.0.0",
+                "redis_enabled": self.redis_manager is not None
             }
         )
         
-        async with websockets.serve(self.handle_connection, self.host, self.port):
-            logger.info(f"MCP server running on ws://{self.host}:{self.port}")
-            await asyncio.Future()  # Run forever
+        try:
+            async with websockets.serve(self.handle_connection, self.host, self.port):
+                logger.success(f"✅ MCP server running on ws://{self.host}:{self.port}")
+                
+                # Start background health monitoring
+                health_task = asyncio.create_task(self._health_monitor_loop())
+                
+                # Wait for shutdown signal
+                await self._wait_for_shutdown()
+                
+                # Cleanup
+                health_task.cancel()
+                await self.stop_server()
+                
+        except Exception as e:
+            logger.error(f"❌ MCP server startup failed: {e}")
+            raise
+    
+    def _setup_signal_handlers(self):
+        """Setup signal handlers for graceful shutdown"""
+        import signal
+        
+        def signal_handler(sig, frame):
+            logger.info(f"🛑 Received signal {sig}, initiating graceful shutdown...")
+            self.shutdown_event.set()
+        
+        try:
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            logger.info("📡 Signal handlers configured for graceful shutdown")
+        except Exception as e:
+            logger.warning(f"Could not setup signal handlers: {e}")
+    
+    async def _wait_for_shutdown(self):
+        """Wait for shutdown signal"""
+        self.shutdown_event = asyncio.Event()
+        await self.shutdown_event.wait()
+    
+    async def _health_monitor_loop(self):
+        """Background health monitoring loop"""
+        while not getattr(self, 'shutdown_event', asyncio.Event()).is_set():
+            try:
+                # Check Redis health if enabled
+                if self.redis_manager:
+                    await self.redis_manager.health_check()
+                
+                # Health check interval
+                await asyncio.sleep(30)
+                
+            except asyncio.CancelledError:
+                logger.info("🧹 Health monitor loop cancelled")
+                break
+            except Exception as e:
+                logger.warning(f"Health monitor error: {e}")
+                await asyncio.sleep(10)  # Shorter sleep on error
             
     async def stop_server(self):
-        """Stop the MCP server"""
-        logger.info("Stopping MCP server")
-        await self.service_registry.unregister_service("moneyprinter_mcp")
+        """Stop the MCP server gracefully"""
+        logger.info("🧹 Stopping MCP server gracefully...")
+        
+        try:
+            # Close Redis connections
+            if self.redis_manager:
+                await self.redis_manager.close()
+                logger.info("✅ Redis connections closed")
+            
+            # Unregister from service discovery
+            await self.service_registry.unregister_service("moneyprinter_mcp")
+            logger.info("✅ Service unregistered from discovery")
+            
+            # Close all WebSocket connections
+            if hasattr(self, 'connection_manager'):
+                for connection_id in list(self.connection_manager.connections.keys()):
+                    await self.connection_manager.remove_connection(connection_id)
+                logger.info("✅ All WebSocket connections closed")
+            
+        except Exception as e:
+            logger.error(f"Error during server shutdown: {e}")
+        
+        logger.success("✅ MCP server stopped successfully")
 
 
 class CircuitBreaker:
