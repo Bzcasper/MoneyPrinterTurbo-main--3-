@@ -47,3 +47,5 @@ black==23.11.0
 flake8==6.1.0
 mypy==1.7.1
 modal
+psutil
+edge_tts

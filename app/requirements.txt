@@ -1,31 +1,51 @@
-moviepy
-streamlit
-edge_tts==6.1.7
-fastapi
-uvicorn
-openai
-faster-whisper
-loguru
-google.generativeai
-dashscope
-g4f
-azure-cognitiveservices-speech
-redis
-python-multipart
-pydantic
-pyyaml
-requests
-psutil
-httpx
-tenacity
-python-dotenv
-websockets
-PyJWT
-supabase
-sqlalchemy
+# Core Supabase Integration Dependencies
+python-dotenv==1.0.0
+
+# Database Dependencies
 asyncpg
-redis-server
-faster_whisper
-imageio-ffmpeg
-torch
-imageio
+
+# Async Support
+aiohttp
+asyncio-mqtt==0.16.1
+
+# Utilities
+toml
+pydantic<2.0
+typing-extensions==4.8.0
+
+# Testing Dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Optional: Enhanced logging and monitoring
+structlog==23.2.0
+rich==13.7.0
+
+# Optional: For MCP integration
+websockets==12.0
+httpx==0.24.1
+loguru==0.7.2
+redis==5.0.1
+PyJWT==2.8.0
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Optional: For data validation
+validators==0.22.0
+email-validator==2.1.0
+
+# LLM Dependencies
+g4f
+openai
+
+# WebUI Dependencies
+streamlit
+
+# Development Dependencies (optional)
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+modal
+psutil
+edge_tts

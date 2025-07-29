@@ -1,6 +1,5 @@
 #!/bin/bash
-cd "$(dirname "$0")"
-export PYTHONPATH="$PWD:$PYTHONPATH"
-echo "🚀 Starting MoneyPrinterTurbo MCP Server..."
-echo "MCP server will listen on: 0.0.0.0:8081"
-python3 run_mcp_server.py
+echo "Starting MCP Server..."
+cd /MoneyPrinterTurbo
+python3 -m uvicorn app.mcp.server:app --host 0.0.0.0 --port 8081 --workers 2 --log-level info
+exec "$@"

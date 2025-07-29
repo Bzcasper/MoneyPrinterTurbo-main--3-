@@ -1,0 +1,769 @@
+# MoneyPrinterTurbo Microservices Docker Compose Configuration
+# This file defines the complete microservices architecture deployment
+
+version: '3.8'
+
+# Common configurations
+x-common-variables: &common-variables
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  PYTHONPATH: /app
+  PYTHONUNBUFFERED: 1
+
+x-common-healthcheck: &common-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+x-common-logging: &common-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Network definitions
+networks:
+  moneyprinter-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  service-mesh:
+    driver: overlay
+    attachable: true
+
+# Volume definitions
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  redis_cluster_data_1:
+    driver: local
+  redis_cluster_data_2:
+    driver: local
+  redis_cluster_data_3:
+    driver: local
+  minio_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jaeger_data:
+    driver: local
+
+services:
+  # =============================================================================
+  # INFRASTRUCTURE SERVICES
+  # =============================================================================
+  
+  # API Gateway (Kong)
+  api-gateway:
+    image: kong:3.4-alpine
+    container_name: moneyprinter-api-gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"   # Proxy port
+      - "8001:8001"   # Admin API port
+    volumes:
+      - ./config/kong.yml:/kong/kong.yml:ro
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+    depends_on:
+      - consul
+      - user-service
+      - content-service
+
+  # Service Discovery (Consul)
+  consul:
+    image: consul:1.16
+    container_name: moneyprinter-consul
+    command: >
+      consul agent -server -bootstrap-expect=1 -datacenter=dc1 -data-dir=/consul/data
+      -bind=0.0.0.0 -client=0.0.0.0 -ui -retry-join=consul
+    ports:
+      - "8500:8500"   # HTTP API
+      - "8600:8600/udp" # DNS
+    volumes:
+      - ./config/consul:/consul/config:ro
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Message Bus (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: moneyprinter-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-moneyprinter}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-secure_password}
+      RABBITMQ_DEFAULT_VHOST: moneyprinter
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # =============================================================================
+  # DATABASE SERVICES
+  # =============================================================================
+
+  # PostgreSQL Primary
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: moneyprinter-postgres-primary
+    environment:
+      POSTGRES_DB: moneyprinter
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS:-secure_password}
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASS:-replication_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./scripts/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    networks:
+      - moneyprinter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # PostgreSQL Read Replica
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: moneyprinter-postgres-replica
+    environment:
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASS:-replication_password}
+      POSTGRES_MASTER_HOST: postgres-primary
+      POSTGRES_MASTER_PORT: 5432
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./config/postgres/recovery.conf:/etc/postgresql/recovery.conf:ro
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - postgres-primary
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U replicator"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Redis Cluster (3 nodes)
+  redis-cluster-1:
+    image: redis:7-alpine
+    container_name: moneyprinter-redis-1
+    command: >
+      redis-server /etc/redis/redis.conf
+      --cluster-enabled yes
+      --cluster-config-file nodes-1.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --port 7001
+    ports:
+      - "7001:7001"
+    volumes:
+      - redis_cluster_data_1:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf:ro
+    networks:
+      - moneyprinter-network
+    logging: *common-logging
+
+  redis-cluster-2:
+    image: redis:7-alpine
+    container_name: moneyprinter-redis-2
+    command: >
+      redis-server /etc/redis/redis.conf
+      --cluster-enabled yes
+      --cluster-config-file nodes-2.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --port 7002
+    ports:
+      - "7002:7002"
+    volumes:
+      - redis_cluster_data_2:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf:ro
+    networks:
+      - moneyprinter-network
+    logging: *common-logging
+
+  redis-cluster-3:
+    image: redis:7-alpine
+    container_name: moneyprinter-redis-3
+    command: >
+      redis-server /etc/redis/redis.conf
+      --cluster-enabled yes
+      --cluster-config-file nodes-3.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --port 7003
+    ports:
+      - "7003:7003"
+    volumes:
+      - redis_cluster_data_3:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf:ro
+    networks:
+      - moneyprinter-network
+    logging: *common-logging
+
+  # Redis Cluster Init
+  redis-cluster-init:
+    image: redis:7-alpine
+    container_name: moneyprinter-redis-init
+    command: >
+      sh -c "sleep 10 && 
+             redis-cli --cluster create
+             redis-cluster-1:7001
+             redis-cluster-2:7002  
+             redis-cluster-3:7003
+             --cluster-replicas 0 --cluster-yes"
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - redis-cluster-1
+      - redis-cluster-2
+      - redis-cluster-3
+
+  # Object Storage (MinIO)
+  minio:
+    image: minio/minio:latest
+    container_name: moneyprinter-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    ports:
+      - "9000:9000"   # API port
+      - "9001:9001"   # Console port
+    volumes:
+      - minio_data:/data
+    networks:
+      - moneyprinter-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # =============================================================================
+  # CORE MICROSERVICES
+  # =============================================================================
+
+  # Configuration Service
+  config-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.config-service
+    image: moneyprinter/config-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-config-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: config-service
+      PORT: 8009
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8009:8009"
+    volumes:
+      - ./config/services:/app/configs:ro
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - consul
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # User Management Service
+  user-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.user-service
+    image: moneyprinter/user-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-user-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: user-service
+      PORT: 8001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_users
+      REDIS_URL: redis://redis-cluster-1:7001,redis-cluster-2:7002,redis-cluster-3:7003
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8001:8001"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - redis-cluster-init
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Content Generation Service
+  content-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.content-service
+    image: moneyprinter/content-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-content-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: content-service
+      PORT: 8002
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_content
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-moneyprinter}:${RABBITMQ_PASS:-secure_password}@rabbitmq:5672/moneyprinter
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_AI_KEY: ${GOOGLE_AI_KEY}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8002:8002"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - rabbitmq
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Text-to-Speech Service
+  tts-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.tts-service
+    image: moneyprinter/tts-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-tts-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: tts-service
+      PORT: 8003
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_tts
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-moneyprinter}:${RABBITMQ_PASS:-secure_password}@rabbitmq:5672/moneyprinter
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8003:8003"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - rabbitmq
+      - minio
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Video Processing Service
+  video-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.video-service
+    image: moneyprinter/video-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-video-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: video-service
+      PORT: 8004
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_video
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-moneyprinter}:${RABBITMQ_PASS:-secure_password}@rabbitmq:5672/moneyprinter
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8004:8004"
+    volumes:
+      - /tmp/video-processing:/tmp/video-working
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - rabbitmq
+      - minio
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Material Management Service
+  material-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.material-service
+    image: moneyprinter/material-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-material-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: material-service
+      PORT: 8005
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_materials
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8005:8005"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - minio
+      - elasticsearch
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Orchestration Service
+  orchestration-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.orchestration-service
+    image: moneyprinter/orchestration-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-orchestration-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: orchestration-service
+      PORT: 8006
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_orchestration
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-moneyprinter}:${RABBITMQ_PASS:-secure_password}@rabbitmq:5672/moneyprinter
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8006:8006"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - rabbitmq
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.notification-service
+    image: moneyprinter/notification-service:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-notification-service
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: notification-service
+      PORT: 8007
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter_notifications
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-moneyprinter}:${RABBITMQ_PASS:-secure_password}@rabbitmq:5672/moneyprinter
+      REDIS_URL: redis://redis-cluster-1:7001,redis-cluster-2:7002,redis-cluster-3:7003
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+    ports:
+      - "8007:8007"
+    networks:
+      - moneyprinter-network
+      - service-mesh
+    depends_on:
+      - postgres-primary
+      - rabbitmq
+      - redis-cluster-init
+      - consul
+      - config-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # =============================================================================
+  # MONITORING AND OBSERVABILITY
+  # =============================================================================
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: moneyprinter-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - moneyprinter-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: moneyprinter-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - user-service
+      - content-service
+      - tts-service
+      - video-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: moneyprinter-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Jaeger (Distributed Tracing)
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: moneyprinter-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+      - "6831:6831/udp"    # UDP collector
+    volumes:
+      - jaeger_data:/tmp
+    networks:
+      - moneyprinter-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686/"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # =============================================================================
+  # DEVELOPMENT AND TESTING SERVICES
+  # =============================================================================
+
+  # Nginx Load Balancer (Development)
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: moneyprinter-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # Frontend Application (Optional - for development)
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    image: moneyprinter/frontend:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:8000/v1
+      REACT_APP_WS_URL: ws://localhost:8007/ws
+    ports:
+      - "3001:3000"
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      <<: *common-healthcheck
+    logging: *common-logging
+
+  # =============================================================================
+  # UTILITY SERVICES
+  # =============================================================================
+
+  # Database Migration Service
+  db-migration:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.db-migration
+    image: moneyprinter/db-migration:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-db-migration
+    environment:
+      <<: *common-variables
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter
+    volumes:
+      - ../../migrations:/app/migrations:ro
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - postgres-primary
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+
+  # Data Seeder Service
+  data-seeder:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.data-seeder
+    image: moneyprinter/data-seeder:${SERVICE_VERSION:-latest}
+    container_name: moneyprinter-data-seeder
+    environment:
+      <<: *common-variables
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASS:-secure_password}@postgres-primary:5432/moneyprinter
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - ../../data/seeds:/app/seeds:ro
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - postgres-primary
+      - minio
+      - db-migration
+    command: ["python", "-m", "seeder.main"]
+
+  # Health Check Dashboard
+  health-dashboard:
+    image: willfarrell/docker-healthcheck-dashboard:latest
+    container_name: moneyprinter-health-dashboard
+    environment:
+      HEALTH_CHECK_URL: http://api-gateway:8000/health
+    ports:
+      - "8080:8080"
+    networks:
+      - moneyprinter-network
+    depends_on:
+      - api-gateway
+    logging: *common-logging
+
+# =============================================================================
+# DEVELOPMENT PROFILES
+# =============================================================================
+
+# To start only core services:
+# docker-compose -f docker-compose.microservices.yml --profile core up
+
+# To start with monitoring:
+# docker-compose -f docker-compose.microservices.yml --profile monitoring up
+
+# To start everything:
+# docker-compose -f docker-compose.microservices.yml --profile full up
+
+profiles:
+  - core
+  - monitoring
+  - development
+  - full

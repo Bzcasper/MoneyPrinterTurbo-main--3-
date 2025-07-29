@@ -1,0 +1,48 @@
+{
+  "timestamp": "2025-07-29 13:39:28",
+  "overall_status": "UNHEALTHY",
+  "results": {
+    "docker_status": "RUNNING",
+    "container_status": {
+      "postgres": "RUNNING",
+      "redis": "RUNNING",
+      "api": "RUNNING",
+      "webui": "RUNNING",
+      "mcp-server": "RUNNING"
+    },
+    "connectivity": {
+      "postgres": "LISTENING",
+      "redis": "LISTENING",
+      "api": "LISTENING",
+      "webui": "LISTENING",
+      "mcp-server": "LISTENING"
+    },
+    "health_checks": {
+      "api": {
+        "status": "HEALTHY",
+        "status_code": 200,
+        "response_time": 0.002671
+      },
+      "webui": {
+        "status": "HEALTHY",
+        "status_code": 200,
+        "response_time": 0.002537
+      },
+      "mcp-server": {
+        "status": "ERROR",
+        "error": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+      },
+      "postgres": {
+        "status": "SKIPPED",
+        "reason": "psycopg2 not installed"
+      },
+      "redis": {
+        "status": "SKIPPED",
+        "reason": "redis-py not installed"
+      }
+    }
+  },
+  "critical_failures": [
+    "mcp-server health check failed"
+  ]
+}

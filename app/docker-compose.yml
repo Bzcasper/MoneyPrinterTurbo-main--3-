@@ -1,34 +1,32 @@
 x-common-volumes: &common-volumes
-  - ./:/MoneyPrinterTurbo:rw
-  - ./storage:/MoneyPrinterTurbo/storage:rw
+  - ../:/MoneyPrinterTurbo:rw
+  - ../storage:/MoneyPrinterTurbo/storage:rw
 
 services:
   webui:
-  build:
-    context: ..
-    dockerfile: app/Dockerfile
-  image: moneyprinterturbo-webui:latest
-  container_name: moneyprinterturbo-webui-new
-  ports:
-    - "8501:8501"
-  command: [ "streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False" ]
-  volumes:
-    - ../:/MoneyPrinterTurbo:rw
-    - ../storage:/MoneyPrinterTurbo/storage:rw
-  restart: unless-stopped
-  environment:
-    - PYTHONPATH=/MoneyPrinterTurbo
-    - HOST=0.0.0.0
-    - PORT=8501
-    - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
-    - DATABASE_URL=postgres://postgres:postgres@db:5432/app
-    - SUPABASE_URL=${SUPABASE_URL}
-    - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-  logging:
-    driver: "json-file"
-    options:
-      max-size: "10m"
-      max-file: "3" 
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    image: moneyprinterturbo-webui:latest
+    container_name: moneyprinterturbo-webui-new
+    ports:
+      - "8501:8501"
+    command: ["/MoneyPrinterTurbo/start_webui.sh"]
+    volumes: *common-volumes
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/MoneyPrinterTurbo
+      - HOST=0.0.0.0
+      - PORT=8501
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   api:
     build:
       context: ..
@@ -37,17 +35,8 @@ services:
     container_name: moneyprinterturbo-api-new
     ports:
       - "8080:8080"
-    command: [
-      "python3", "-m", "uvicorn", "app.main:app",
-      "--host", "0.0.0.0",
-      "--port", "8080",
-      "--workers", "4",
-      "--access-log",
-      "--log-level", "info"
-    ]
-    volumes:
-      - ../:/MoneyPrinterTurbo:rw
-      - ../storage:/MoneyPrinterTurbo/storage:rw
+    command: ["/MoneyPrinterTurbo/start_api.sh"]
+    volumes: *common-volumes
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
@@ -79,19 +68,25 @@ services:
     image: redis:7-alpine
     container_name: moneyprinterturbo-redis-new
     restart: unless-stopped
-    # Expose Redis port internally only to avoid host port conflicts
     expose:
       - "6379"
-    command: [
-      "redis-server",
-      "--maxmemory", "512mb",
-      "--maxmemory-policy", "allkeys-lru",
-      "--appendonly", "yes",
-      "--save", "60", "1000",
-      "--tcp-keepalive", "60",
-      "--timeout", "0",
-      "--tcp-backlog", "511"
-    ]
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --appendonly
+      - yes
+      - --save
+      - "60"
+      - "1000"
+      - --tcp-keepalive
+      - "60"
+      - --timeout
+      - "0"
+      - --tcp-backlog
+      - "511"
     volumes:
       - redis_data:/data
     environment:
@@ -107,7 +102,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
   mcp-server:
     build:
       context: ..
@@ -116,12 +110,8 @@ services:
     container_name: moneyprinterturbo-mcp-new
     ports:
       - "8081:8081"
-    command: [
-      "/MoneyPrinterTurbo/scripts/start_mcp_server.sh"
-    ]
-    volumes:
-      - ../:/MoneyPrinterTurbo:rw
-      - ../storage:/MoneyPrinterTurbo/storage:rw
+    command: ["/MoneyPrinterTurbo/start_mcp_server.sh"]
+    volumes: *common-volumes
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
@@ -137,7 +127,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python3", "-c", "import asyncio; import websockets; import sys; sys.exit(0 if asyncio.run(websockets.connect('ws://localhost:8081').close()) is None else 1)"]
+      test: ["CMD", "python3", "-c", "import socket; sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); result = sock.connect_ex(('localhost', 8081)); sock.close(); exit(0 if result == 0 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -147,7 +137,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
   db:
     image: postgres:15-alpine
     container_name: moneyprinterturbo-postgres-new
@@ -155,7 +144,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=mpt
+      - POSTGRES_DB=app
     ports:
       - "5432:5432"
     volumes:

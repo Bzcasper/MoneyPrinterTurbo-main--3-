@@ -8,7 +8,7 @@ WORKDIR /MoneyPrinterTurbo
 ENV PYTHONPATH="/MoneyPrinterTurbo"
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install system dependencies and FFmpeg in a single step
 RUN apt-get update && apt-get install -y \
     git \
     imagemagick \
@@ -18,11 +18,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     tar \
     xz-utils \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-
-# Install FFmpeg from Debian repositories
-RUN apt-get update && apt-get install -y ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -39,11 +36,18 @@ RUN useradd -m -u 1000 appuser && \
 # Copy requirements first for better caching
 COPY app/requirements.txt ./requirements.txt
 
-# Install Python dependencies (use streamlit version from requirements.txt)
-RUN pip install --no-cache-dir -r requirements.txt websockets
+# Update pip and install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
+
+# Copy startup scripts from the correct location in the build context
+COPY app/start_webui.sh /MoneyPrinterTurbo/start_webui.sh
+COPY app/start_mcp_server.sh /MoneyPrinterTurbo/start_mcp_server.sh
+COPY app/start_api.sh /MoneyPrinterTurbo/start_api.sh
+RUN chmod +x /MoneyPrinterTurbo/*.sh
 
 # Change ownership to appuser
 RUN chown -R appuser:appuser /MoneyPrinterTurbo
@@ -51,12 +55,12 @@ RUN chown -R appuser:appuser /MoneyPrinterTurbo
 # Switch to non-root user
 USER appuser
 
-# Expose ports
-EXPOSE 8501 8080
+# Expose ports for webui and api services
+EXPOSE 8501 8080 8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Default command (can be overridden)
+# Default command (can be overridden by docker-compose.yml)
 CMD ["streamlit", "run", "./webui/Main.py", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=True", "--browser.gatherUsageStats=False"]

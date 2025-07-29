@@ -1,0 +1,372 @@
+{
+  "deploy-api": {
+    "name": "API Deployment Pipeline",
+    "description": "Complete API deployment with testing and verification",
+    "parameters": {
+      "environment": "production",
+      "app_name": "moneyprinter-api",
+      "health_endpoint": "/health"
+    },
+    "steps": [
+      {
+        "id": "install-deps",
+        "name": "Install Dependencies",
+        "action": "shell",
+        "command": "npm install --production",
+        "timeout": 300,
+        "description": "Install production dependencies"
+      },
+      {
+        "id": "build",
+        "name": "Build Application",
+        "action": "shell",
+        "command": "npm run build",
+        "timeout": 600,
+        "description": "Build application for production"
+      },
+      {
+        "id": "run-tests",
+        "name": "Run Test Suite",
+        "action": "shell",
+        "command": "npm test -- --coverage",
+        "timeout": 900,
+        "description": "Execute comprehensive test suite with coverage"
+      },
+      {
+        "id": "security-scan",
+        "name": "Security Audit",
+        "action": "shell",
+        "command": "npm audit --audit-level=moderate",
+        "timeout": 120,
+        "description": "Run security vulnerability scan"
+      },
+      {
+        "id": "deploy",
+        "name": "Deploy to {environment}",
+        "action": "shell",
+        "command": "npm run deploy:{environment}",
+        "timeout": 1200,
+        "description": "Deploy application to target environment"
+      },
+      {
+        "id": "health-check",
+        "name": "Verify Deployment",
+        "action": "http",
+        "url": "https://{app_name}.com{health_endpoint}",
+        "method": "GET",
+        "expected_status": 200,
+        "timeout": 30,
+        "description": "Verify deployment health and availability"
+      },
+      {
+        "id": "smoke-tests",
+        "name": "Run Smoke Tests",
+        "action": "shell",
+        "command": "npm run test:smoke -- --env={environment}",
+        "timeout": 300,
+        "description": "Execute smoke tests against deployed environment"
+      }
+    ]
+  },
+  
+  "test-suite": {
+    "name": "Comprehensive Test Suite",
+    "description": "Full testing pipeline with multiple test types",
+    "parameters": {
+      "environment": "staging",
+      "coverage_threshold": "85",
+      "test_timeout": "600"
+    },
+    "steps": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "action": "shell",
+        "command": "npm run lint",
+        "timeout": 120,
+        "description": "Run code linting and style checks"
+      },
+      {
+        "id": "type-check",
+        "name": "Type Checking",
+        "action": "shell",
+        "command": "npm run typecheck",
+        "timeout": 180,
+        "description": "Run TypeScript type checking"
+      },
+      {
+        "id": "unit-tests",
+        "name": "Unit Tests",
+        "action": "shell",
+        "command": "npm run test:unit -- --coverage --threshold={coverage_threshold}",
+        "timeout": "{test_timeout}",
+        "description": "Execute unit tests with coverage analysis"
+      },
+      {
+        "id": "integration-tests",
+        "name": "Integration Tests",
+        "action": "shell",
+        "command": "npm run test:integration -- --env={environment}",
+        "timeout": "{test_timeout}",
+        "description": "Run integration tests against test environment"
+      },
+      {
+        "id": "api-tests",
+        "name": "API Contract Tests",
+        "action": "shell",
+        "command": "npm run test:api -- --env={environment}",
+        "timeout": "{test_timeout}",
+        "description": "Validate API contracts and responses"
+      },
+      {
+        "id": "performance-tests",
+        "name": "Performance Tests",
+        "action": "shell",
+        "command": "npm run test:performance -- --duration=60",
+        "timeout": 300,
+        "description": "Execute performance and load tests"
+      }
+    ]
+  },
+  
+  "video-generation": {
+    "name": "AI Video Generation Pipeline",
+    "description": "Complete video generation workflow using MoneyPrinterTurbo",
+    "parameters": {
+      "subject": "technology trends",
+      "duration": "60",
+      "voice": "male",
+      "language": "en",
+      "quality": "high"
+    },
+    "steps": [
+      {
+        "id": "script-generation",
+        "name": "Generate Video Script",
+        "action": "video_task",
+        "phase": "script_generation",
+        "params": {
+          "subject": "{subject}",
+          "duration": "{duration}",
+          "language": "{language}",
+          "style": "engaging"
+        },
+        "description": "Generate engaging video script using AI"
+      },
+      {
+        "id": "keyword-extraction",
+        "name": "Extract Keywords",
+        "action": "video_task",
+        "phase": "keyword_extraction",
+        "params": {
+          "language": "{language}",
+          "max_keywords": 10
+        },
+        "description": "Extract relevant keywords for content discovery"
+      },
+      {
+        "id": "audio-generation",
+        "name": "Generate Voiceover",
+        "action": "video_task",
+        "phase": "audio_generation",
+        "params": {
+          "voice": "{voice}",
+          "language": "{language}",
+          "speed": "normal",
+          "quality": "{quality}"
+        },
+        "description": "Generate high-quality AI voiceover"
+      },
+      {
+        "id": "subtitle-generation",
+        "name": "Generate Subtitles",
+        "action": "video_task",
+        "phase": "subtitle_generation",
+        "params": {
+          "language": "{language}",
+          "style": "modern",
+          "timing": "automatic"
+        },
+        "description": "Create synchronized subtitles"
+      },
+      {
+        "id": "material-search",
+        "name": "Search Video Materials",
+        "action": "video_task",
+        "phase": "material_search",
+        "params": {
+          "quality": "{quality}",
+          "duration_per_clip": 10,
+          "max_clips": 20
+        },
+        "description": "Find relevant video materials and assets"
+      },
+      {
+        "id": "video-composition",
+        "name": "Compose Final Video",
+        "action": "video_task",
+        "phase": "video_composition",
+        "params": {
+          "resolution": "1920x1080",
+          "fps": 30,
+          "quality": "{quality}",
+          "format": "mp4"
+        },
+        "description": "Compose final video with all elements"
+      },
+      {
+        "id": "post-processing",
+        "name": "Post-Processing",
+        "action": "video_task",
+        "phase": "post_processing",
+        "params": {
+          "effects": ["fade_in", "fade_out"],
+          "color_correction": true,
+          "audio_normalization": true
+        },
+        "description": "Apply final touches and optimizations"
+      }
+    ]
+  },
+  
+  "data-pipeline": {
+    "name": "Data Processing Pipeline",
+    "description": "ETL pipeline for data transformation and analysis",
+    "parameters": {
+      "source_format": "csv",
+      "target_format": "parquet",
+      "batch_size": "10000",
+      "validation_rules": "strict"
+    },
+    "steps": [
+      {
+        "id": "data-validation",
+        "name": "Validate Input Data",
+        "action": "shell",
+        "command": "python scripts/validate_data.py --format={source_format} --rules={validation_rules}",
+        "timeout": 300,
+        "description": "Validate input data quality and format"
+      },
+      {
+        "id": "data-extraction",
+        "name": "Extract Data",
+        "action": "shell",
+        "command": "python scripts/extract_data.py --source={source_format} --batch-size={batch_size}",
+        "timeout": 1800,
+        "description": "Extract data from source systems"
+      },
+      {
+        "id": "data-transformation",
+        "name": "Transform Data",
+        "action": "shell",
+        "command": "python scripts/transform_data.py --target={target_format}",
+        "timeout": 3600,
+        "description": "Apply transformations and business logic"
+      },
+      {
+        "id": "data-quality-check",
+        "name": "Quality Assessment",
+        "action": "shell",
+        "command": "python scripts/quality_check.py --threshold=95",
+        "timeout": 600,
+        "description": "Assess data quality and completeness"
+      },
+      {
+        "id": "data-loading",
+        "name": "Load to Warehouse",
+        "action": "shell",
+        "command": "python scripts/load_data.py --format={target_format} --mode=append",
+        "timeout": 1200,
+        "description": "Load processed data to data warehouse"
+      },
+      {
+        "id": "index-creation",
+        "name": "Create Indexes",
+        "action": "shell",
+        "command": "python scripts/create_indexes.py --optimize=true",
+        "timeout": 900,
+        "description": "Create optimized indexes for query performance"
+      },
+      {
+        "id": "pipeline-validation",
+        "name": "Validate Pipeline",
+        "action": "http",
+        "url": "http://localhost:8080/api/pipeline/validate",
+        "method": "POST",
+        "data": {"pipeline_id": "data_pipeline_v1"},
+        "expected_status": 200,
+        "description": "Validate end-to-end pipeline success"
+      }
+    ]
+  },
+  
+  "ml-training": {
+    "name": "Machine Learning Training Pipeline",
+    "description": "Complete ML model training and evaluation workflow",
+    "parameters": {
+      "model_type": "neural_network",
+      "epochs": "100",
+      "batch_size": "32",
+      "learning_rate": "0.001",
+      "validation_split": "0.2"
+    },
+    "steps": [
+      {
+        "id": "data-preparation",
+        "name": "Prepare Training Data",
+        "action": "shell",
+        "command": "python ml/prepare_data.py --split={validation_split} --normalize=true",
+        "timeout": 600,
+        "description": "Prepare and preprocess training data"
+      },
+      {
+        "id": "model-setup",
+        "name": "Setup Model Architecture",
+        "action": "shell",
+        "command": "python ml/setup_model.py --type={model_type} --lr={learning_rate}",
+        "timeout": 120,
+        "description": "Initialize model architecture and configuration"
+      },
+      {
+        "id": "training",
+        "name": "Train Model",
+        "action": "shell",
+        "command": "python ml/train.py --epochs={epochs} --batch-size={batch_size} --gpu=auto",
+        "timeout": 7200,
+        "description": "Train machine learning model"
+      },
+      {
+        "id": "evaluation",
+        "name": "Evaluate Model",
+        "action": "shell",
+        "command": "python ml/evaluate.py --metrics=accuracy,precision,recall,f1",
+        "timeout": 300,
+        "description": "Evaluate model performance on test set"
+      },
+      {
+        "id": "model-validation",
+        "name": "Cross-Validation",
+        "action": "shell",
+        "command": "python ml/cross_validate.py --folds=5 --metrics=all",
+        "timeout": 1800,
+        "description": "Perform k-fold cross-validation"
+      },
+      {
+        "id": "model-export",
+        "name": "Export Model",
+        "action": "shell",
+        "command": "python ml/export_model.py --format=onnx --optimize=true",
+        "timeout": 180,
+        "description": "Export trained model for deployment"
+      },
+      {
+        "id": "performance-benchmark",
+        "name": "Benchmark Performance",
+        "action": "shell",
+        "command": "python ml/benchmark.py --samples=1000 --concurrent=true",
+        "timeout": 300,
+        "description": "Benchmark inference performance"
+      }
+    ]
+  }
+}

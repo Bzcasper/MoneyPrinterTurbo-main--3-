@@ -1,0 +1,525 @@
+{
+  "simple_backup_workflow": {
+    "id": "simple_backup_001",
+    "name": "Simple File Backup",
+    "description": "Creates a backup of important files with validation",
+    "steps": [
+      {
+        "id": "create_backup_dir",
+        "name": "Create Backup Directory",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "mkdir -p /backups/$(date +%Y%m%d)"
+        },
+        "timeout": 30,
+        "max_retries": 2
+      },
+      {
+        "id": "backup_config",
+        "name": "Backup Configuration Files",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cp -r /etc/myapp /backups/$(date +%Y%m%d)/config"
+        },
+        "dependencies": ["create_backup_dir"],
+        "timeout": 60
+      },
+      {
+        "id": "backup_data",
+        "name": "Backup Data Directory",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "tar -czf /backups/$(date +%Y%m%d)/data.tar.gz /var/lib/myapp/data"
+        },
+        "dependencies": ["create_backup_dir"],
+        "parallel_group": "backup_operations",
+        "timeout": 300
+      },
+      {
+        "id": "backup_logs",
+        "name": "Backup Log Files",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cp -r /var/log/myapp /backups/$(date +%Y%m%d)/logs"
+        },
+        "dependencies": ["create_backup_dir"],
+        "parallel_group": "backup_operations",
+        "timeout": 120
+      },
+      {
+        "id": "verify_backup",
+        "name": "Verify Backup Integrity",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "ls -la /backups/$(date +%Y%m%d) && echo 'Backup verification complete'"
+        },
+        "dependencies": ["backup_config", "backup_data", "backup_logs"],
+        "timeout": 30
+      },
+      {
+        "id": "cleanup_old_backups",
+        "name": "Cleanup Old Backups",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "find /backups -type d -mtime +30 -exec rm -rf {} \\;"
+        },
+        "dependencies": ["verify_backup"],
+        "critical": false,
+        "timeout": 60
+      }
+    ],
+    "metadata": {
+      "category": "backup",
+      "estimated_duration": "5-10 minutes",
+      "author": "Workflow Engine"
+    }
+  },
+
+  "api_data_processing_workflow": {
+    "id": "api_processing_001",
+    "name": "API Data Processing Pipeline",
+    "description": "Fetches data from multiple APIs, processes, and stores results",
+    "steps": [
+      {
+        "id": "initialize_session",
+        "name": "Initialize Processing Session",
+        "action": "variable.set",
+        "parameters": {
+          "name": "session_id",
+          "value": "session_{timestamp}"
+        }
+      },
+      {
+        "id": "create_work_dir",
+        "name": "Create Working Directory",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "mkdir -p /tmp/api_processing/{session_id}"
+        },
+        "dependencies": ["initialize_session"],
+        "rollback_action": "shell.execute",
+        "rollback_parameters": {
+          "command": "rm -rf /tmp/api_processing/{session_id}"
+        }
+      },
+      {
+        "id": "fetch_users_api",
+        "name": "Fetch Users Data",
+        "action": "http.get",
+        "parameters": {
+          "url": "https://jsonplaceholder.typicode.com/users",
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "dependencies": ["create_work_dir"],
+        "parallel_group": "api_calls",
+        "timeout": 30,
+        "max_retries": 3
+      },
+      {
+        "id": "fetch_posts_api",
+        "name": "Fetch Posts Data",
+        "action": "http.get",
+        "parameters": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "dependencies": ["create_work_dir"],
+        "parallel_group": "api_calls",
+        "timeout": 30,
+        "max_retries": 3
+      },
+      {
+        "id": "fetch_comments_api",
+        "name": "Fetch Comments Data",
+        "action": "http.get",
+        "parameters": {
+          "url": "https://jsonplaceholder.typicode.com/comments",
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "dependencies": ["create_work_dir"],
+        "parallel_group": "api_calls",
+        "timeout": 30,
+        "max_retries": 3
+      },
+      {
+        "id": "save_users_data",
+        "name": "Save Users Data",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/api_processing/{session_id}/users.json",
+          "content": "{fetch_users_api_result}"
+        },
+        "dependencies": ["fetch_users_api"],
+        "parallel_group": "save_operations"
+      },
+      {
+        "id": "save_posts_data",
+        "name": "Save Posts Data",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/api_processing/{session_id}/posts.json",
+          "content": "{fetch_posts_api_result}"
+        },
+        "dependencies": ["fetch_posts_api"],
+        "parallel_group": "save_operations"
+      },
+      {
+        "id": "save_comments_data",
+        "name": "Save Comments Data",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/api_processing/{session_id}/comments.json",
+          "content": "{fetch_comments_api_result}"
+        },
+        "dependencies": ["fetch_comments_api"],
+        "parallel_group": "save_operations"
+      },
+      {
+        "id": "process_data",
+        "name": "Process Combined Data",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "python3 -c \"import json; import os; session='{session_id}'; print(f'Processing data for session {session}'); files=os.listdir(f'/tmp/api_processing/{session}'); print(f'Found {len(files)} data files')\""
+        },
+        "dependencies": ["save_users_data", "save_posts_data", "save_comments_data"],
+        "timeout": 60
+      },
+      {
+        "id": "generate_report",
+        "name": "Generate Processing Report",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/api_processing/{session_id}/report.txt",
+          "content": "API Data Processing Report\\nSession: {session_id}\\nTimestamp: {timestamp}\\nStatus: Completed\\n"
+        },
+        "dependencies": ["process_data"]
+      },
+      {
+        "id": "validate_results",
+        "name": "Validate Processing Results",
+        "action": "validate.condition",
+        "parameters": {
+          "condition": "os.path.exists('/tmp/api_processing/{session_id}/report.txt')"
+        },
+        "dependencies": ["generate_report"]
+      }
+    ],
+    "metadata": {
+      "category": "data_processing",
+      "estimated_duration": "2-5 minutes",
+      "author": "Workflow Engine",
+      "tags": ["api", "json", "processing"]
+    }
+  },
+
+  "deployment_pipeline_workflow": {
+    "id": "deployment_pipeline_001",
+    "name": "Complete Deployment Pipeline",
+    "description": "Full CI/CD deployment pipeline with testing and rollback",
+    "steps": [
+      {
+        "id": "pre_deployment_check",
+        "name": "Pre-deployment Health Check",
+        "action": "http.get",
+        "parameters": {
+          "url": "http://localhost:8080/health",
+          "timeout": 10
+        },
+        "max_retries": 2,
+        "critical": false
+      },
+      {
+        "id": "backup_current_version",
+        "name": "Backup Current Version",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cp -r /app/current /app/backup-$(date +%Y%m%d-%H%M%S)"
+        },
+        "timeout": 120,
+        "rollback_action": "shell.execute",
+        "rollback_parameters": {
+          "command": "echo 'Backup cleanup would happen here'"
+        }
+      },
+      {
+        "id": "stop_application",
+        "name": "Stop Application Services",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "systemctl stop myapp"
+        },
+        "dependencies": ["backup_current_version"],
+        "timeout": 30,
+        "rollback_action": "shell.execute",
+        "rollback_parameters": {
+          "command": "systemctl start myapp"
+        }
+      },
+      {
+        "id": "deploy_application",
+        "name": "Deploy New Application Version",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "rsync -av /deployments/new-version/ /app/current/"
+        },
+        "dependencies": ["stop_application"],
+        "timeout": 180
+      },
+      {
+        "id": "update_configuration",
+        "name": "Update Application Configuration",
+        "action": "file.write",
+        "parameters": {
+          "path": "/app/current/config/production.json",
+          "content": "{\"environment\": \"production\", \"version\": \"2.1.0\", \"deployment_time\": \"{timestamp}\"}"
+        },
+        "dependencies": ["deploy_application"],
+        "parallel_group": "configuration"
+      },
+      {
+        "id": "update_environment",
+        "name": "Update Environment Variables",
+        "action": "file.write",
+        "parameters": {
+          "path": "/app/current/.env",
+          "content": "NODE_ENV=production\\nPORT=8080\\nDATABASE_URL=postgresql://prod-db:5432/myapp"
+        },
+        "dependencies": ["deploy_application"],
+        "parallel_group": "configuration"
+      },
+      {
+        "id": "install_dependencies",
+        "name": "Install Application Dependencies",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cd /app/current && npm ci --production"
+        },
+        "dependencies": ["update_configuration", "update_environment"],
+        "timeout": 300
+      },
+      {
+        "id": "run_database_migrations",
+        "name": "Run Database Migrations",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cd /app/current && npm run migrate"
+        },
+        "dependencies": ["install_dependencies"],
+        "timeout": 120
+      },
+      {
+        "id": "start_application",
+        "name": "Start Application Services",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "systemctl start myapp"
+        },
+        "dependencies": ["run_database_migrations"],
+        "timeout": 60
+      },
+      {
+        "id": "health_check_retry",
+        "name": "Post-deployment Health Check",
+        "action": "http.get",
+        "parameters": {
+          "url": "http://localhost:8080/health",
+          "timeout": 10
+        },
+        "dependencies": ["start_application"],
+        "max_retries": 5,
+        "timeout": 30
+      },
+      {
+        "id": "run_smoke_tests",
+        "name": "Run Smoke Tests",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "cd /app/current && npm run test:smoke"
+        },
+        "dependencies": ["health_check_retry"],
+        "timeout": 180
+      },
+      {
+        "id": "update_load_balancer",
+        "name": "Update Load Balancer Configuration",
+        "action": "http.post",
+        "parameters": {
+          "url": "http://loadbalancer:8000/api/servers/enable",
+          "json": {
+            "server": "app-server-1",
+            "port": 8080
+          }
+        },
+        "dependencies": ["run_smoke_tests"],
+        "timeout": 30,
+        "critical": false
+      },
+      {
+        "id": "cleanup_old_backups",
+        "name": "Cleanup Old Backups",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "find /app/backup-* -mtime +7 -exec rm -rf {} \\;"
+        },
+        "dependencies": ["update_load_balancer"],
+        "critical": false,
+        "timeout": 60
+      },
+      {
+        "id": "send_deployment_notification",
+        "name": "Send Deployment Notification",
+        "action": "http.post",
+        "parameters": {
+          "url": "https://hooks.slack.com/webhook/deployment",
+          "json": {
+            "text": "Deployment completed successfully",
+            "version": "2.1.0",
+            "timestamp": "{timestamp}"
+          }
+        },
+        "dependencies": ["cleanup_old_backups"],
+        "critical": false,
+        "timeout": 15
+      }
+    ],
+    "metadata": {
+      "category": "deployment",
+      "estimated_duration": "10-15 minutes",
+      "author": "DevOps Team",
+      "tags": ["cicd", "deployment", "production"],
+      "rollback_strategy": "automatic"
+    }
+  },
+
+  "data_validation_workflow": {
+    "id": "data_validation_001",
+    "name": "Data Quality Validation Pipeline",
+    "description": "Comprehensive data validation and quality checks",
+    "steps": [
+      {
+        "id": "setup_validation_env",
+        "name": "Setup Validation Environment",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "mkdir -p /tmp/data_validation && cd /tmp/data_validation"
+        }
+      },
+      {
+        "id": "download_dataset",
+        "name": "Download Dataset for Validation",
+        "action": "http.get",
+        "parameters": {
+          "url": "https://example.com/dataset.csv",
+          "timeout": 60
+        },
+        "dependencies": ["setup_validation_env"],
+        "max_retries": 3
+      },
+      {
+        "id": "save_dataset",
+        "name": "Save Downloaded Dataset",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/data_validation/dataset.csv",
+          "content": "{download_dataset_result}"
+        },
+        "dependencies": ["download_dataset"]
+      },
+      {
+        "id": "validate_file_format",
+        "name": "Validate File Format",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "file /tmp/data_validation/dataset.csv | grep -q 'CSV' && echo 'Valid CSV format' || exit 1"
+        },
+        "dependencies": ["save_dataset"],
+        "timeout": 10
+      },
+      {
+        "id": "check_data_structure",
+        "name": "Check Data Structure",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "head -n 1 /tmp/data_validation/dataset.csv | wc -w"
+        },
+        "dependencies": ["validate_file_format"],
+        "parallel_group": "validation_checks"
+      },
+      {
+        "id": "validate_data_types",
+        "name": "Validate Data Types",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "python3 -c \"import pandas as pd; df = pd.read_csv('/tmp/data_validation/dataset.csv'); print(df.dtypes)\""
+        },
+        "dependencies": ["validate_file_format"],
+        "parallel_group": "validation_checks",
+        "timeout": 30
+      },
+      {
+        "id": "check_missing_values",
+        "name": "Check for Missing Values",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "python3 -c \"import pandas as pd; df = pd.read_csv('/tmp/data_validation/dataset.csv'); print(f'Missing values: {df.isnull().sum().sum()}')\""
+        },
+        "dependencies": ["validate_file_format"],
+        "parallel_group": "validation_checks",
+        "timeout": 30
+      },
+      {
+        "id": "validate_ranges",
+        "name": "Validate Data Ranges",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "python3 -c \"import pandas as pd; df = pd.read_csv('/tmp/data_validation/dataset.csv'); print(df.describe())\""
+        },
+        "dependencies": ["validate_file_format"],
+        "parallel_group": "validation_checks",
+        "timeout": 30
+      },
+      {
+        "id": "generate_validation_report",
+        "name": "Generate Validation Report",
+        "action": "file.write",
+        "parameters": {
+          "path": "/tmp/data_validation/validation_report.txt",
+          "content": "Data Validation Report\\n===================\\nTimestamp: {timestamp}\\nDataset: dataset.csv\\nValidation Status: Completed\\n\\nChecks Performed:\\n- File format validation\\n- Data structure check\\n- Data type validation\\n- Missing value analysis\\n- Range validation\\n"
+        },
+        "dependencies": ["check_data_structure", "validate_data_types", "check_missing_values", "validate_ranges"]
+      },
+      {
+        "id": "archive_results",
+        "name": "Archive Validation Results",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "tar -czf /tmp/data_validation_$(date +%Y%m%d_%H%M%S).tar.gz -C /tmp data_validation/"
+        },
+        "dependencies": ["generate_validation_report"],
+        "timeout": 60
+      },
+      {
+        "id": "cleanup_temp_files",
+        "name": "Cleanup Temporary Files",
+        "action": "shell.execute",
+        "parameters": {
+          "command": "rm -rf /tmp/data_validation"
+        },
+        "dependencies": ["archive_results"],
+        "critical": false
+      }
+    ],
+    "metadata": {
+      "category": "data_quality",
+      "estimated_duration": "3-8 minutes",
+      "author": "Data Team",
+      "tags": ["validation", "quality", "csv", "python"]
+    }
+  }
+}

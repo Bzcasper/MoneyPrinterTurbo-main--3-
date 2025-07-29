@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+#
+# Workflow Execute - CLI Wrapper Script
+# Provides easy access to workflow execution functionality
+#
+
+set -e
+
+# Script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to show usage
+show_usage() {
+    cat << EOF
+Workflow Execute - Claude Flow Workflow Execution System
+
+USAGE:
+    ./workflow-execute [OPTIONS]
+
+OPTIONS:
+    --name <name>           Workflow name (required)
+    --params <json>         Parameters as JSON string
+    --dry-run              Preview execution without running
+    --verbose              Verbose output
+    --output <file>        Output file for results (JSON)
+    --list                 List available workflows
+    --help                 Show this help message
+
+EXAMPLES:
+    # Execute deployment workflow
+    ./workflow-execute --name deploy-api
+
+    # Execute with custom parameters
+    ./workflow-execute --name test-suite --params '{"environment": "staging"}'
+
+    # Dry-run with verbose output
+    ./workflow-execute --name video-generation --dry-run --verbose
+
+    # Execute and save results
+    ./workflow-execute --name deploy-api --output results.json
+
+    # List available workflows
+    ./workflow-execute --list
+
+BUILT-IN WORKFLOWS:
+    deploy-api          Complete API deployment pipeline
+    test-suite          Comprehensive testing workflow
+    video-generation    AI video creation pipeline
+    data-pipeline       ETL data processing workflow
+    ml-training         Machine learning training pipeline
+
+For more information, see: README_WORKFLOW_EXECUTE.md
+EOF
+}
+
+# Function to list available workflows
+list_workflows() {
+    print_status "Available Workflow Templates:"
+    echo ""
+    echo "Built-in Templates:"
+    echo "  🚀 deploy-api        - Complete API deployment pipeline"
+    echo "  🧪 test-suite        - Comprehensive testing workflow"  
+    echo "  🎬 video-generation  - AI video creation pipeline"
+    echo "  📊 data-pipeline     - ETL data processing workflow"
+    echo "  🤖 ml-training       - Machine learning training pipeline"
+    echo ""
+    
+    # Check for custom workflows
+    if [ -d "$PROJECT_ROOT/workflows" ]; then
+        echo "Custom Workflows:"
+        for workflow_file in "$PROJECT_ROOT/workflows"/*.json; do
+            if [ -f "$workflow_file" ]; then
+                workflow_name=$(basename "$workflow_file" .json)
+                if [ "$workflow_name" != "examples" ]; then
+                    echo "  📄 $workflow_name"
+                fi
+            fi
+        done
+        echo ""
+    fi
+    
+    echo "Use --name <workflow> to execute a specific workflow"
+    echo "Use --dry-run to preview execution without running"
+}
+
+# Function to check dependencies
+check_dependencies() {
+    # Check if Python is available
+    if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
+        print_error "Python is required but not installed"
+        exit 1
+    fi
+    
+    # Check if workflow script exists
+    if [ ! -f "$PROJECT_ROOT/scripts/workflow_execute.py" ]; then
+        print_error "Workflow execution script not found: $PROJECT_ROOT/scripts/workflow_execute.py"
+        exit 1
+    fi
+}
+
+# Function to execute workflow
+execute_workflow() {
+    local args=()
+    
+    # Build arguments array
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --name)
+                args+=("--name" "$2")
+                shift 2
+                ;;
+            --params)
+                args+=("--params" "$2")  
+                shift 2
+                ;;
+            --dry-run)
+                args+=("--dry-run")
+                shift
+                ;;
+            --verbose)
+                args+=("--verbose")
+                shift
+                ;;
+            --output)
+                args+=("--output" "$2")
+                shift 2
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Check if name is provided
+    local has_name=false
+    for arg in "${args[@]}"; do
+        if [ "$arg" == "--name" ]; then
+            has_name=true
+            break
+        fi
+    done
+    
+    if [ "$has_name" == false ]; then
+        print_error "Workflow name is required. Use --name <workflow>"
+        echo ""
+        list_workflows
+        exit 1
+    fi
+    
+    # Execute the workflow
+    print_status "Executing workflow with Claude Flow integration..."
+    
+    # Change to project directory
+    cd "$PROJECT_ROOT"
+    
+    # Use python3 if available, otherwise python
+    local python_cmd="python3"
+    if ! command -v python3 &> /dev/null; then
+        python_cmd="python"
+    fi
+    
+    # Execute with all arguments
+    if "$python_cmd" scripts/workflow_execute.py "${args[@]}"; then
+        print_success "Workflow execution completed successfully"
+    else
+        exit_code=$?
+        print_error "Workflow execution failed with exit code: $exit_code"
+        exit $exit_code
+    fi
+}
+
+# Main script logic
+main() {
+    # Check dependencies first
+    check_dependencies
+    
+    # Handle special cases
+    case "${1:-}" in
+        --help|-h|help)
+            show_usage
+            exit 0
+            ;;
+        --list|-l|list)
+            list_workflows
+            exit 0
+            ;;
+        "")
+            print_error "No arguments provided"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+        *)
+            execute_workflow "$@"
+            ;;
+    esac
+}
+
+# Run main function with all arguments
+main "$@"
