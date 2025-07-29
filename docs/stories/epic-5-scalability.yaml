@@ -1,0 +1,210 @@
+# Epic 5: Scalability & Offline Mode
+# Status: Draft
+# Priority: Low
+# Stories: 3
+# Estimated Points: 12
+
+## Epic Overview
+**Epic 5: Scalability & Offline Mode** - Make the tool accessible offline with local AI models and scalable for power users through cloud infrastructure and hybrid deployment options.
+
+**Business Value**: Expands MoneyPrinterTurbo++ accessibility to users with limited internet connectivity while providing enterprise-grade scalability options for high-volume content creators and commercial users.
+
+**Success Criteria**:
+- Fully functional offline mode with local AI models (Ollama integration)
+- Cloud deployment options with auto-scaling capabilities
+- Hybrid local/cloud mode for optimal performance and cost efficiency
+- Support for enterprise deployment with containerization and orchestration
+- Cost estimation and optimization tools for cloud usage
+
+---
+
+## Story 5.1: Offline Mode & Local AI Integration
+**ID**: STORY-5.1  
+**Title**: Complete Offline Content Generation System  
+**Status**: Draft  
+**Priority**: Medium  
+**Story Points**: 6  
+**Epic**: Scalability & Offline Mode  
+**Dependencies**: Epic 1 (Core Services Architecture)  
+
+### User Story
+**As a** user with limited internet connectivity or privacy concerns  
+**I want** fully functional video generation using local AI models  
+**So that** I can create content without internet dependency or data privacy concerns  
+
+### Acceptance Criteria
+1. **AC-5.1.1**: Integrate Ollama for local script generation with multiple model options (Llama 3, Mistral, CodeLlama)
+2. **AC-5.1.2**: Provide comprehensive offline stock asset library with categorized images, videos, and audio
+3. **AC-5.1.3**: Implement local TTS using edge-tts or similar offline solution
+4. **AC-5.1.4**: Add offline mode toggle in settings with automatic model detection and download
+5. **AC-5.1.5**: Support offline subtitle generation and translation using local models
+6. **AC-5.1.6**: Provide model management interface for downloading, updating, and optimizing local AI models
+
+### Technical Requirements
+- **TR-5.1.1**: Create `OfflineService` orchestrating all local AI model interactions
+- **TR-5.1.2**: Implement Ollama integration for local LLM operations
+- **TR-5.1.3**: Add local asset library management with efficient storage and retrieval
+- **TR-5.1.4**: Create offline TTS service using edge-tts or similar
+- **TR-5.1.5**: Implement local translation service using offline models
+- **TR-5.1.6**: Add model management system with download progress and optimization
+
+### Definition of Done
+- [ ] **Local LLM**: Ollama integration with multiple model support
+- [ ] **Asset Library**: Comprehensive offline stock asset collection (1000+ items)
+- [ ] **TTS Offline**: Local text-to-speech generation capability
+- [ ] **Translation**: Offline multilingual subtitle support
+- [ ] **Model Management**: User-friendly model download and management interface
+- [ ] **Mode Toggle**: Seamless online/offline mode switching
+- [ ] **Performance**: Offline generation within 10 minutes for standard videos
+- [ ] **Storage**: Efficient local storage management with cleanup options
+
+### Files to Modify/Create
+- `app/services/offline/` (NEW)
+  - `offline_service.py`
+  - `ollama_integration.py`
+  - `local_asset_manager.py`
+  - `offline_tts.py`
+  - `model_manager.py`
+- `app/config/offline_config.py` (NEW)
+- `app/storage/offline_assets/` (NEW - directory structure)
+- `webui/pages/offline_setup.py` (NEW)
+- `tests/services/test_offline.py` (NEW)
+
+---
+
+## Story 5.2: Cloud Infrastructure & Auto-Scaling
+**ID**: STORY-5.2  
+**Title**: Enterprise Cloud Deployment & Scaling System  
+**Status**: Draft  
+**Priority**: Low  
+**Story Points**: 4  
+**Epic**: Scalability & Offline Mode  
+**Dependencies**: All previous epics (for cloud integration)  
+
+### User Story
+**As a** enterprise user or high-volume content creator  
+**I want** cloud deployment options with auto-scaling  
+**So that** I can handle large-scale content production efficiently and cost-effectively  
+
+### Acceptance Criteria
+1. **AC-5.2.1**: Provide AWS integration for cloud-based video rendering with S3 storage and Lambda processing
+2. **AC-5.2.2**: Implement auto-scaling based on queue length and resource utilization
+3. **AC-5.2.3**: Add real-time cost estimation and budget management tools
+4. **AC-5.2.4**: Support containerized deployment using Docker and Kubernetes
+5. **AC-5.2.5**: Provide monitoring and alerting for cloud resource usage and performance
+
+### Technical Requirements
+- **TR-5.2.1**: Create `CloudService` for AWS integration and resource management
+- **TR-5.2.2**: Implement auto-scaling logic with queue monitoring and resource optimization
+- **TR-5.2.3**: Add cost estimation and budget tracking functionality
+- **TR-5.2.4**: Create Docker containerization and Kubernetes deployment configurations
+- **TR-5.2.5**: Implement cloud monitoring and alerting system
+
+### Definition of Done
+- [ ] **AWS Integration**: Working S3 storage and Lambda processing integration
+- [ ] **Auto-Scaling**: Automatic resource scaling based on demand
+- [ ] **Cost Management**: Real-time cost estimation and budget alerts
+- [ ] **Containerization**: Docker and Kubernetes deployment ready
+- [ ] **Monitoring**: Comprehensive cloud resource monitoring and alerting
+- [ ] **Documentation**: Complete deployment guides and best practices
+
+### Files to Modify/Create
+- `app/services/cloud/` (NEW)
+  - `cloud_service.py`
+  - `aws_integration.py`
+  - `auto_scaler.py`
+  - `cost_manager.py`
+- `deployment/` (NEW)
+  - `Dockerfile`
+  - `docker-compose.cloud.yml`
+  - `kubernetes/`
+- `app/monitoring/cloud_monitor.py` (NEW)
+- `tests/services/test_cloud.py` (NEW)
+
+---
+
+## Story 5.3: Hybrid Architecture & Cost Optimization
+**ID**: STORY-5.3  
+**Title**: Intelligent Hybrid Local/Cloud Optimization  
+**Status**: Draft  
+**Priority**: Low  
+**Story Points**: 2  
+**Epic**: Scalability & Offline Mode  
+**Dependencies**: Stories 5.1, 5.2  
+
+### User Story
+**As a** cost-conscious power user  
+**I want** intelligent hybrid local/cloud processing  
+**So that** I can optimize performance and costs by using the best resource for each task  
+
+### Acceptance Criteria
+1. **AC-5.3.1**: Implement intelligent task routing between local and cloud resources based on complexity and cost
+2. **AC-5.3.2**: Provide cost-performance optimization with user-configurable preferences
+3. **AC-5.3.3**: Add hybrid mode configuration with automatic resource selection
+4. **AC-5.3.4**: Support gradual migration from local to cloud as workload increases
+5. **AC-5.3.5**: Implement cost tracking and optimization suggestions for hybrid usage
+
+### Technical Requirements
+- **TR-5.3.1**: Create `HybridOrchestrator` for intelligent resource routing
+- **TR-5.3.2**: Implement cost-performance optimization algorithms
+- **TR-5.3.3**: Add hybrid configuration management
+- **TR-5.3.4**: Create migration assistance tools and recommendations
+- **TR-5.3.5**: Implement cost tracking and optimization suggestion engine
+
+### Definition of Done
+- [ ] **Task Routing**: Intelligent local/cloud routing based on optimization criteria
+- [ ] **Cost Optimization**: 30%+ cost savings through intelligent resource selection
+- [ ] **Configuration**: User-friendly hybrid mode configuration
+- [ ] **Migration**: Smooth transition tools from local to cloud operation
+- [ ] **Tracking**: Comprehensive cost and performance tracking across hybrid usage
+- [ ] **Recommendations**: Automated optimization suggestions for cost and performance
+
+### Files to Modify/Create
+- `app/services/hybrid/` (NEW)
+  - `hybrid_orchestrator.py`
+  - `resource_optimizer.py`
+  - `cost_optimizer.py`
+  - `migration_assistant.py`
+- `app/utils/cost_tracking.py` (NEW)
+- `webui/pages/hybrid_config.py` (NEW)
+- `tests/services/test_hybrid.py` (NEW)
+
+---
+
+## Epic Summary
+**Total Story Points**: 12  
+**Estimated Duration**: 5-7 days  
+**Critical Path**: Offline mode foundational for hybrid architecture  
+**Risk Level**: Medium - Infrastructure complexity and deployment orchestration  
+
+**Dependencies Graph**:
+```
+Epic 1 (Foundation) ──┐
+                      ├── Story 5.1 (Offline) ──┐
+All Previous Epics ───┼── Story 5.2 (Cloud) ───┼── Story 5.3 (Hybrid)
+                      └─────────────────────────┘
+```
+
+**Deployment Options**:
+1. **Pure Local**: Offline mode with local AI models and assets
+2. **Pure Cloud**: Full cloud deployment with auto-scaling
+3. **Hybrid**: Intelligent local/cloud resource optimization
+4. **Enterprise**: Containerized deployment with orchestration
+
+**Performance Targets**:
+- **Offline Mode**: <10 minutes for standard video generation
+- **Cloud Scaling**: Handle 100+ concurrent users
+- **Hybrid Optimization**: 30%+ cost savings over pure cloud
+- **Enterprise Deployment**: 99.9% uptime with monitoring
+
+**Key Integration Points**:
+1. Offline Service → Local AI Models → Asset Management
+2. Cloud Service → AWS Infrastructure → Auto-Scaling
+3. Hybrid Orchestrator → Cost Optimization → Resource Selection
+4. Deployment System → Containerization → Monitoring
+
+**Risk Mitigation**:
+1. **Model Size**: Efficient model management with optional downloads
+2. **Cloud Costs**: Real-time cost monitoring with budget alerts
+3. **Complexity**: Gradual adoption path from simple to advanced deployments
+4. **Dependencies**: Minimal external dependencies for offline mode

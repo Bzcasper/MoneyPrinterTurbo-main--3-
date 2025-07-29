@@ -26,3 +26,8 @@ class HttpException(Exception):
 
 class FileNotFoundException(Exception):
     pass
+
+
+class DatabaseConnectionError(Exception):
+    """Custom exception for database connection errors."""
+    pass

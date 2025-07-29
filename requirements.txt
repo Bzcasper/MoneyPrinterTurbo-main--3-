@@ -1,18 +1,16 @@
 # Core Supabase Integration Dependencies
-supabase==2.0.0
-postgrest==0.10.8
 python-dotenv==1.0.0
 
 # Database Dependencies
-asyncpg==0.29.0
-psycopg2-binary==2.9.9
+asyncpg
 
 # Async Support
-aiohttp==3.9.1
+aiohttp
 asyncio-mqtt==0.16.1
 
 # Utilities
-pydantic==2.5.0
+toml
+pydantic<2.0
 typing-extensions==4.8.0
 
 # Testing Dependencies
@@ -26,13 +24,26 @@ rich==13.7.0
 
 # Optional: For MCP integration
 websockets==12.0
-httpx==0.25.2
+httpx==0.24.1
+loguru==0.7.2
+redis==5.0.1
+PyJWT==2.8.0
+fastapi==0.104.1
+uvicorn==0.24.0
 
 # Optional: For data validation
 validators==0.22.0
 email-validator==2.1.0
 
+# LLM Dependencies
+g4f
+openai
+
+# WebUI Dependencies
+streamlit
+
 # Development Dependencies (optional)
 black==23.11.0
 flake8==6.1.0
 mypy==1.7.1
+modal

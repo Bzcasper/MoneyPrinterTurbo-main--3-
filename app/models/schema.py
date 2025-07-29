@@ -1,9 +1,10 @@
 import warnings
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Dict
+from datetime import datetime
 
 import pydantic
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # 忽略 Pydantic 的特定警告
 warnings.filterwarnings(
@@ -307,3 +308,203 @@ class BgmUploadResponse(BaseResponse):
                 "data": {"file": "/MoneyPrinterTurbo/resource/songs/example.mp3"},
             },
         }
+
+
+# TTS-related schema models
+
+class TTSProvider(BaseModel):
+    """TTS provider information"""
+    name: str = Field(..., description="Provider identifier")
+    display_name: str = Field(..., description="Human-readable provider name")
+    is_active: bool = Field(True, description="Whether provider is enabled")
+    capabilities: List[str] = Field(default_factory=list, description="Provider capabilities")
+    priority: int = Field(0, description="Provider priority (higher = preferred)")
+
+
+class VoiceInfo(BaseModel):
+    """Voice information for TTS"""
+    name: str = Field(..., description="Voice identifier")
+    display_name: Optional[str] = Field(None, description="Human-readable voice name")
+    language: str = Field(..., description="Language code (e.g., en-US)")
+    gender: Optional[str] = Field(None, description="Voice gender")
+    age_group: Optional[str] = Field(None, description="Age group (adult, child, elderly)")
+    style: Optional[str] = Field(None, description="Voice style (casual, professional, etc.)")
+    natural_sample_rate: Optional[int] = Field(None, description="Natural sample rate in Hz")
+    is_neural: bool = Field(False, description="Whether this is a neural voice")
+    is_premium: bool = Field(False, description="Whether voice requires premium access")
+    character_info: Optional[Dict[str, Any]] = Field(None, description="Character information for character voices")
+
+
+class TTSRequest(BaseModel):
+    """TTS synthesis request"""
+    text: str = Field(..., min_length=1, max_length=10000, description="Text to synthesize")
+    provider: str = Field("google", description="TTS provider to use")
+    voice_name: str = Field(..., description="Voice identifier")
+    language_code: str = Field("en-US", description="Language code")
+    speaking_rate: float = Field(1.0, ge=0.25, le=4.0, description="Speaking rate multiplier")
+    pitch: float = Field(0.0, ge=-20.0, le=20.0, description="Pitch adjustment in semitones")
+    volume_gain: float = Field(0.0, ge=-96.0, le=16.0, description="Volume gain in dB")
+    gender: Optional[str] = Field(None, description="Preferred voice gender")
+    
+    # Character-specific fields
+    character_id: Optional[str] = Field(None, description="Character ID for character voices")
+    emotion: str = Field("neutral", description="Emotion to express")
+    voice_settings: Dict[str, Any] = Field(default_factory=dict, description="Additional voice settings")
+    
+    # Output options
+    output_format: str = Field("mp3", description="Audio output format")
+    sample_rate: Optional[int] = Field(None, description="Audio sample rate")
+
+
+class TTSResponse(BaseModel):
+    """TTS synthesis response"""
+    audio_file_path: Optional[str] = Field(None, description="Path to generated audio file")
+    audio_url: Optional[str] = Field(None, description="URL to audio file if hosted")
+    audio_format: str = Field("mp3", description="Audio format")
+    duration: float = Field(..., description="Audio duration in seconds")
+    voice_info: VoiceInfo = Field(..., description="Information about the voice used")
+    
+    # Quality and metadata
+    quality_score: Optional[float] = Field(None, description="Quality score (0.0-1.0)")
+    emotion_score: Optional[float] = Field(None, description="Emotion confidence score")
+    synthesis_time: Optional[float] = Field(None, description="Time taken to synthesize")
+    
+    # Subtitle and timing data
+    subtitle_data: List[Dict[str, Any]] = Field(default_factory=list, description="Word-level timing data")
+    
+    # Caching
+    cache_hit: bool = Field(False, description="Whether response was served from cache")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "audio_file_path": "/path/to/audio.mp3",
+                "audio_format": "mp3",
+                "duration": 5.2,
+                "voice_info": {
+                    "name": "en-US-Wavenet-D",
+                    "language": "en-US",
+                    "gender": "male",
+                    "is_neural": True
+                },
+                "quality_score": 0.95,
+                "synthesis_time": 1.2,
+                "cache_hit": False
+            }
+        }
+
+
+class VoiceListResponse(BaseModel):
+    """Response for voice listing"""
+    provider: str = Field(..., description="TTS provider")
+    voices: List[VoiceInfo] = Field(..., description="Available voices")
+    total_count: int = Field(..., description="Total number of voices")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "provider": "google",
+                "voices": [
+                    {
+                        "name": "en-US-Wavenet-D",
+                        "display_name": "US English (Male, Wavenet)",
+                        "language": "en-US",
+                        "gender": "male",
+                        "is_neural": True
+                    }
+                ],
+                "total_count": 1
+            }
+        }
+
+
+class BatchTTSRequest(BaseModel):
+    """Batch TTS synthesis request"""
+    requests: List[TTSRequest] = Field(..., min_items=1, max_items=50, description="TTS requests to process")
+    parallel_processing: bool = Field(True, description="Whether to process requests in parallel")
+    max_concurrent: int = Field(5, ge=1, le=20, description="Maximum concurrent requests")
+
+
+class BatchTTSResponse(BaseModel):
+    """Batch TTS synthesis response"""
+    results: List[Union[TTSResponse, Dict[str, str]]] = Field(..., description="Results or errors for each request")
+    successful_count: int = Field(..., description="Number of successful syntheses")
+    failed_count: int = Field(..., description="Number of failed syntheses")
+    total_time: float = Field(..., description="Total processing time")
+
+
+# Character-specific models (re-exported from characterbox service)
+
+class CharacterInfo(BaseModel):
+    """Character information for character voices"""
+    character_id: str = Field(..., description="Character identifier")
+    name: str = Field(..., description="Character name")
+    description: Optional[str] = Field(None, description="Character description")
+    personality_traits: List[str] = Field(default_factory=list, description="Personality traits")
+    supported_emotions: List[str] = Field(default_factory=list, description="Supported emotions")
+    language_codes: List[str] = Field(default_factory=list, description="Supported languages")
+    avatar_url: Optional[str] = Field(None, description="Character avatar URL")
+    is_premium: bool = Field(False, description="Whether character requires premium access")
+
+
+class CharacterSpeechRequest(BaseModel):
+    """Request for character-based speech synthesis"""
+    character_id: str = Field(..., description="Character to use")
+    text: str = Field(..., min_length=1, max_length=5000, description="Text to synthesize")
+    emotion: str = Field("neutral", description="Emotion to express")
+    language_code: str = Field("en-US", description="Language code")
+    voice_settings: Dict[str, Any] = Field(default_factory=dict, description="Voice customization")
+
+
+class ConversationRequest(BaseModel):
+    """Request for multi-character conversation"""
+    characters: List[str] = Field(..., min_items=2, description="Character IDs")
+    script: str = Field(..., min_length=1, description="Conversation script")
+    conversation_type: str = Field("dialogue", description="Type of conversation")
+    scene_setting: Optional[str] = Field(None, description="Scene context")
+
+
+class ConversationResponse(BaseModel):
+    """Response from conversation generation"""
+    conversation_id: str = Field(..., description="Conversation identifier")
+    audio_segments: List[Dict[str, Any]] = Field(..., description="Audio segments")
+    total_duration: float = Field(..., description="Total duration")
+    combined_audio_url: Optional[str] = Field(None, description="Combined audio URL")
+
+
+# Analytics and monitoring models
+
+class TTSUsageStats(BaseModel):
+    """TTS usage statistics"""
+    provider: str = Field(..., description="TTS provider")
+    total_requests: int = Field(0, description="Total requests")
+    successful_requests: int = Field(0, description="Successful requests") 
+    average_duration: float = Field(0.0, description="Average audio duration")
+    average_synthesis_time: float = Field(0.0, description="Average synthesis time")
+    cache_hit_rate: float = Field(0.0, description="Cache hit rate percentage")
+    
+    @property
+    def success_rate(self) -> float:
+        """Calculate success rate percentage"""
+        if self.total_requests == 0:
+            return 0.0
+        return (self.successful_requests / self.total_requests) * 100
+
+
+class ProviderHealthStatus(BaseModel):
+    """Health status for TTS providers"""
+    provider: str = Field(..., description="Provider name")
+    is_healthy: bool = Field(..., description="Whether provider is healthy")
+    last_check: datetime = Field(..., description="Last health check timestamp")
+    response_time: Optional[float] = Field(None, description="Average response time")
+    error_rate: float = Field(0.0, description="Recent error rate percentage")
+    message: Optional[str] = Field(None, description="Status message")
+
+
+class TTSAnalyticsResponse(BaseModel):
+    """TTS analytics dashboard response"""
+    usage_stats: List[TTSUsageStats] = Field(..., description="Usage statistics by provider")
+    provider_health: List[ProviderHealthStatus] = Field(..., description="Provider health status")
+    popular_voices: List[Dict[str, Any]] = Field(..., description="Most used voices")
+    cost_analysis: Dict[str, Any] = Field(..., description="Cost breakdown")
+    recommendations: List[str] = Field(..., description="Optimization recommendations")

@@ -147,8 +147,31 @@ async def health_check():
 async def startup_event():
     """Initialize application on startup"""
     app.state.start_time = time.time()
-    logger.info("MoneyPrinterTurbo API started successfully")
-    
+    logger.info("MoneyPrinterTurbo API starting up...")
+
+    # Run database migrations
+    try:
+        from app.database.migrations import check_database_status, migrate_database
+        from app.database.connection import get_supabase_connection
+
+        # Ensure connection is established before checking status
+        db_connection = get_supabase_connection()
+        if not db_connection.is_connected:
+            await db_connection.connect(use_service_key=True)
+
+        status = await check_database_status()
+        if status.get('migration_needed', False):
+            logger.info("Database migration needed. Running migrations...")
+            migration_results = await migrate_database(force=False)
+            if migration_results.get('success', False):
+                logger.info("Database migration completed successfully.")
+            else:
+                logger.error(f"Database migration failed: {migration_results.get('errors')}")
+        else:
+            logger.info("Database schema is up to date.")
+    except Exception as e:
+        logger.error(f"Database migration check failed: {e}")
+
     # Initialize GPU resources
     try:
         from app.services.gpu_manager import initialize_gpu_resources
@@ -164,6 +187,8 @@ async def startup_event():
         logger.info("MCP server initialized successfully")
     except Exception as e:
         logger.warning(f"MCP server initialization failed: {e}")
+
+    logger.info("MoneyPrinterTurbo API started successfully")
 
 @app.on_event("shutdown")
 async def shutdown_event():

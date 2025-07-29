@@ -17,7 +17,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from loguru import logger
 
-from app.database.connection import get_supabase_connection, SupabaseConnectionError
+from app.database.connection import get_supabase_connection
+from app.models.exception import DatabaseConnectionError
 from app.mcp.supabase_tools import supabase_mcp_tools
 
 

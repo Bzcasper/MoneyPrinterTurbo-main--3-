@@ -50,8 +50,8 @@ class UserRole(str, Enum):
 
 
 @dataclass
-class BaseModel:
-    """Base model with common fields."""
+class DatabaseBaseModel:
+    """Base model for database entities."""
     id: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -79,7 +79,7 @@ class BaseModel:
 
 
 @dataclass
-class User(BaseModel):
+class User(DatabaseBaseModel):
     """User model for authentication and user management."""
     email: Optional[str] = None
     username: Optional[str] = None
@@ -95,7 +95,7 @@ class User(BaseModel):
 
 
 @dataclass
-class Project(BaseModel):
+class Project(DatabaseBaseModel):
     """Project model for video generation projects."""
     name: str = ""
     description: Optional[str] = None
@@ -131,7 +131,7 @@ class Project(BaseModel):
 
 
 @dataclass
-class Video(BaseModel):
+class Video(DatabaseBaseModel):
     """Video model for individual video files and metadata."""
     project_id: Optional[str] = None
     title: str = ""
@@ -165,7 +165,7 @@ class Video(BaseModel):
 
 
 @dataclass
-class Task(BaseModel):
+class Task(DatabaseBaseModel):
     """Task model for background job tracking."""
     name: str = ""
     description: Optional[str] = None
@@ -195,7 +195,7 @@ class Task(BaseModel):
 
 
 @dataclass
-class Analytics(BaseModel):
+class Analytics(DatabaseBaseModel):
     """Analytics model for tracking usage and performance."""
     user_id: Optional[str] = None
     project_id: Optional[str] = None
@@ -217,7 +217,7 @@ class Analytics(BaseModel):
 
 
 @dataclass
-class SystemConfig(BaseModel):
+class SystemConfig(DatabaseBaseModel):
     """System configuration model for application settings."""
     key: str = ""
     value: Any = None
@@ -558,7 +558,7 @@ class TTSJobStatus(str, Enum):
 
 
 @dataclass
-class TTSJob(BaseModel):
+class TTSJob(DatabaseBaseModel):
     """TTS job model for tracking text-to-speech operations."""
     text: str = ""
     provider: TTSProvider = TTSProvider.GOOGLE_TTS
@@ -593,7 +593,7 @@ class TTSJob(BaseModel):
 
 
 @dataclass
-class Character(BaseModel):
+class Character(DatabaseBaseModel):
     """CharacterBox character model for voice personalities."""
     character_id: str = ""
     name: str = ""
@@ -624,7 +624,7 @@ class Character(BaseModel):
 
 
 @dataclass
-class TTSVoice(BaseModel):
+class TTSVoice(DatabaseBaseModel):
     """TTS voice model for managing available voices across providers."""
     voice_id: str = ""
     name: str = ""
@@ -788,7 +788,7 @@ MODEL_REGISTRY.update({
 
 # Export all models and utilities
 __all__ = [
-    'BaseModel',
+    'DatabaseBaseModel',
     'User',
     'Project', 
     'Video',

@@ -1,35 +1,35 @@
 [app]
 video_source = "pexels" # "pexels" or "pixabay"
 
-# 是否隐藏配置面板
+# Whether to hide the configuration panel
 hide_config = false
 
 # Pexels API Key
 # Register at https://www.pexels.com/api/ to get your API key.
 # You can use multiple keys to avoid rate limits.
 # For example: pexels_api_keys = ["123adsf4567adf89","abd1321cd13efgfdfhi"]
-# 特别注意格式，Key 用英文双引号括起来，多个Key用逗号隔开
+# Note the format: Keys should be enclosed in double quotes, and multiple keys separated by commas.
 pexels_api_keys = []
 
 # Pixabay API Key
 # Register at https://pixabay.com/api/docs/ to get your API key.
 # You can use multiple keys to avoid rate limits.
 # For example: pixabay_api_keys = ["123adsf4567adf89","abd1321cd13efgfdfhi"]
-# 特别注意格式，Key 用英文双引号括起来，多个Key用逗号隔开
+# Note the format: Keys should be enclosed in double quotes, and multiple keys separated by commas.
 pixabay_api_keys = []
 
-# 支持的提供商 (Supported providers):
+# Supported providers:
 #   openai
-#   moonshot    (月之暗面)
+#   moonshot
 #   azure
-#   qwen        (通义千问)
+#   qwen
 #   deepseek
 #   gemini
 #   ollama
 #   g4f
 #   oneapi
 #   cloudflare
-#   ernie       (文心一言)
+#   ernie
 llm_provider = "openai"
 
 ########## Pollinations AI Settings
@@ -73,8 +73,8 @@ oneapi_model_name = ""
 g4f_model_name = "gpt-3.5-turbo"
 
 ########## Azure API Key
-# Visit https://learn.microsoft.com/zh-cn/azure/ai-services/openai/ to get more details
-# API documentation: https://learn.microsoft.com/zh-cn/azure/ai-services/openai/reference
+# Visit https://learn.microsoft.com/en-us/azure/ai-services/openai/ to get more details
+# API documentation: https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
 azure_api_key = ""
 azure_base_url = ""
 azure_model_name = "gpt-35-turbo"        # replace with your model deployment name
@@ -88,7 +88,7 @@ gemini_model_name = "gemini-1.0-pro"
 # Visit https://dashscope.console.aliyun.com/apiKey to get your API key
 # Visit below links to get more details
 # https://tongyi.aliyun.com/qianwen/
-# https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction
+# https://help.aliyun.com/en/dashscope/developer-reference/model-introduction
 qwen_api_key = ""
 qwen_model_name = "qwen-max"
 
@@ -116,12 +116,6 @@ subtitle_provider = "edge"
 #
 # FFMPEG
 #
-# 通常情况下，ffmpeg 会被自动下载，并且会被自动检测到。
-# 但是如果你的环境有问题，无法自动下载，可能会遇到如下错误：
-#   RuntimeError: No ffmpeg exe could be found.
-#   Install ffmpeg on your system, or set the IMAGEIO_FFMPEG_EXE environment variable.
-# 此时你可以手动下载 ffmpeg 并设置 ffmpeg_path，下载地址：https://www.gyan.dev/ffmpeg/builds/
-
 # Under normal circumstances, ffmpeg is downloaded automatically and detected automatically.
 # However, if there is an issue with your environment that prevents automatic downloading, you might encounter the following error:
 #   RuntimeError: No ffmpeg exe could be found.
@@ -130,12 +124,6 @@ subtitle_provider = "edge"
 
 # ffmpeg_path = "C:\\Users\\harry\\Downloads\\ffmpeg.exe"
 #########################################################################################
-
-# 当视频生成成功后，API服务提供的视频下载接入点，默认为当前服务的地址和监听端口
-# 比如 http://127.0.0.1:8080/tasks/6357f542-a4e1-46a1-b4c9-bf3bd0df5285/final-1.mp4
-# 如果你需要使用域名对外提供服务（一般会用nginx做代理），则可以设置为你的域名
-# 比如 https://xxxx.com/tasks/6357f542-a4e1-46a1-b4c9-bf3bd0df5285/final-1.mp4
-# endpoint="https://xxxx.com"
 
 # When the video is successfully generated, the API service provides a download endpoint for the video, defaulting to the service's current address and listening port.
 # For example, http://127.0.0.1:8080/tasks/6357f542-a4e1-46a1-b4c9-bf3bd0df5285/final-1.mp4
@@ -146,14 +134,9 @@ endpoint = ""
 
 
 # Video material storage location
-# material_directory = ""                    # Indicates that video materials will be downloaded to the default folder, the default folder is ./storage/cache_videos under the current project
+# material_directory = ""                    # Indicates that video materials will be downloaded to the default folder, which is ./storage/cache_videos under the current project
 # material_directory = "/user/harry/videos"  # Indicates that video materials will be downloaded to a specified folder
-# material_directory = "task"                # Indicates that video materials will be downloaded to the current task's folder, this method does not allow sharing of already downloaded video materials
-
-# 视频素材存放位置
-# material_directory = ""                    #表示将视频素材下载到默认的文件夹，默认文件夹为当前项目下的 ./storage/cache_videos
-# material_directory = "/user/harry/videos"  #表示将视频素材下载到指定的文件夹中
-# material_directory = "task"                #表示将视频素材下载到当前任务的文件夹中，这种方式无法共享已经下载的视频素材
+# material_directory = "task"                # Indicates that video materials will be downloaded to the current task's folder; this method does not allow sharing of already downloaded video materials
 
 material_directory = ""
 
@@ -164,7 +147,7 @@ redis_port = 6379
 redis_db = 0
 redis_password = ""
 
-# 文生视频时的最大并发任务数
+# Maximum number of concurrent tasks for text-to-video generation
 max_concurrent_tasks = 5
 
 
@@ -239,42 +222,46 @@ default_quality = "high"
 
 [gpt_sovits]
 # GPT-SoVITS Voice Synthesis Settings
-# GPT-SoVITS API服务地址
+# GPT-SoVITS API service address
 api_base_url = "http://localhost:9880"
-# API Key (可选，如果服务需要认证)
+# API Key (optional, if the service requires authentication)
 api_key = ""
-# 请求超时时间（秒）
+# Request timeout (seconds)
 timeout = 60
-# 支持的声音模型路径
+# Supported voice model path
 models_dir = "models/gpt_sovits"
 
 [ui]
 # UI related settings
-# 是否隐藏日志信息
-# Whether to hide logs in the UI
+# Whether to hide log information
 hide_log = false
 
 [database]
 # Session / metadata storage for Claude-Flow Hive-Mind
-type = "sqlite"            # sqlite | memory
-path = "data/sessions.db"  # Relative to project root
-fallback_to_memory = true  # Fall back to RAM if SQLite unavailable
+type = "postgresql"            # sqlite | memory | postgresql
+path = "${DATABASE_URL}"  # Relative to project root for sqlite, connection string for postgresql
+fallback_to_memory = false  # Fall back to RAM if database is unavailable
 
 [video]
 # Enhanced Video Generation Settings
-# 默认视频格式 (youtube_shorts, instagram_reels, tiktok, landscape, square)
+# Default video format (youtube_shorts, instagram_reels, tiktok, landscape, square)
 default_format = "youtube_shorts"
-# 默认视频时长（秒）
+# Default video duration (seconds)
 default_duration = 30
-# 最大视频时长（秒）
+# Maximum video duration (seconds)
 max_duration = 60
-# 默认分辨率 (1080x1920 for vertical, 1920x1080 for landscape)
+# Default resolution (1080x1920 for vertical, 1920x1080 for landscape)
 default_resolution = "1080x1920"
-# GPU加速
+# GPU acceleration
 enable_gpu_acceleration = true
-# 字幕设置
+# Subtitle settings
 enable_auto_subtitles = true
 subtitle_font_size = 48
 subtitle_color = "white"
 subtitle_stroke_color = "black"
 subtitle_stroke_width = 2
+
+[supabase]
+# Get your Supabase URL and Anon Key from your Supabase project settings
+url = "${SUPABASE_URL}"
+anon_key = "${SUPABASE_ANON_KEY}"

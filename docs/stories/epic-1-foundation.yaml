@@ -1,0 +1,176 @@
+# Epic 1: Foundation & Core Enhancements
+# Status: Draft
+# Priority: High
+# Stories: 3
+# Estimated Points: 21
+
+## Epic Overview
+**Epic 1: Foundation & Core Enhancements** - Establish improved script generation, subtitle service, and basic UI to create a stable MVP for single-video automation.
+
+**Business Value**: Forms the MVP backbone for MoneyPrinterTurbo++ with enhanced AI scripting, dynamic subtitles, and refreshed UI delivering higher-quality outputs faster.
+
+**Success Criteria**:
+- Enhanced AI script generation with domain-specific models
+- Dynamic subtitle service with adaptive positioning and multilingual support  
+- Streamlit-based wizard UI with real-time previews and mobile responsiveness
+- Processing time under 5 minutes for single video generation
+- Video quality score minimum 80% based on internal metrics
+
+---
+
+## Story 1.1: Script Generation Upgrade
+**ID**: STORY-1.1  
+**Title**: Enhanced AI Script Generation Service  
+**Status**: Draft  
+**Priority**: High  
+**Story Points**: 8  
+**Epic**: Foundation & Core Enhancements  
+**Dependencies**: None  
+
+### User Story
+**As a** content creator  
+**I want** enhanced AI script generation with domain-specific models  
+**So that** videos are more tailored and engaging for my target audience  
+
+### Acceptance Criteria
+1. **AC-1.1.1**: Integrate at least one specialized LLM (Grok 3 or equivalent) for script generation
+2. **AC-1.1.2**: Support custom prompts and domain-specific refinements (tutorials, ads, entertainment)
+3. **AC-1.1.3**: Generate scripts in under 10 seconds with improved coherence and engagement metrics
+4. **AC-1.1.4**: Implement fallback chain: Primary LLM → Secondary LLM → Edge/Local model
+5. **AC-1.1.5**: Add script quality scoring based on readability, engagement potential, and length optimization
+
+### Technical Requirements
+- **TR-1.1.1**: Create `ScriptGenerationService` class with provider abstraction
+- **TR-1.1.2**: Implement configuration management for multiple LLM providers
+- **TR-1.1.3**: Add request/response validation using Pydantic models
+- **TR-1.1.4**: Integrate with existing script workflow in `app/services/llm.py`
+- **TR-1.1.5**: Add logging and monitoring for script generation performance
+
+### Definition of Done
+- [ ] **Code**: ScriptGenerationService implemented with provider abstraction
+- [ ] **Tests**: Unit tests covering all providers and fallback scenarios
+- [ ] **Integration**: Service integrated with existing video generation pipeline
+- [ ] **Configuration**: Environment variables and config management setup
+- [ ] **Documentation**: API documentation and usage examples
+- [ ] **Performance**: Scripts generated in <10 seconds, quality score >75%
+- [ ] **Monitoring**: Logging and error handling implemented
+
+### Files to Modify/Create
+- `app/services/script_generation.py` (NEW)
+- `app/config/config.py` (MODIFY - add LLM configs)
+- `app/services/llm.py` (MODIFY - integrate new service)
+- `app/models/schema.py` (MODIFY - add script models)
+- `tests/services/test_script_generation.py` (NEW)
+
+---
+
+## Story 1.2: Dynamic Subtitle Service
+**ID**: STORY-1.2  
+**Title**: AI-Powered Dynamic Subtitle System  
+**Status**: Draft  
+**Priority**: High  
+**Story Points**: 8  
+**Epic**: Foundation & Core Enhancements  
+**Dependencies**: None  
+
+### User Story
+**As a** creator  
+**I want** adaptive subtitles with AI positioning and styling  
+**So that** text is readable, professional, and doesn't obstruct important visual elements  
+
+### Acceptance Criteria
+1. **AC-1.2.1**: Use OpenCV for intelligent object detection and subtitle positioning to avoid visual obstruction
+2. **AC-1.2.2**: Support multilingual translation with at least 5 languages (English, Spanish, French, Chinese, Arabic)
+3. **AC-1.2.3**: Embed subtitles in videos without quality loss using optimized encoding
+4. **AC-1.2.4**: Implement adaptive styling based on video content (dark/light backgrounds, motion detection)
+5. **AC-1.2.5**: Provide real-time preview of subtitle positioning and styling
+
+### Technical Requirements
+- **TR-1.2.1**: Enhance existing `SubtitleService` with AI positioning capabilities
+- **TR-1.2.2**: Integrate translation service (Google Translate API or equivalent)
+- **TR-1.2.3**: Implement OpenCV-based object detection for subtitle placement
+- **TR-1.2.4**: Add subtitle styling engine with automatic contrast adjustment
+- **TR-1.2.5**: Create preview service for real-time subtitle positioning
+
+### Definition of Done
+- [ ] **Code**: Enhanced SubtitleService with AI positioning and translation
+- [ ] **Tests**: Unit and integration tests for all subtitle features
+- [ ] **Integration**: Service integrated with video generation pipeline
+- [ ] **Translation**: Multi-language support working for 5 target languages
+- [ ] **Preview**: Real-time subtitle preview functionality
+- [ ] **Performance**: Subtitle processing adds <30 seconds to total video generation
+- [ ] **Quality**: No visual quality loss when embedding subtitles
+
+### Files to Modify/Create
+- `app/services/subtitle.py` (MODIFY - enhance with AI features)
+- `app/services/translation.py` (NEW)
+- `app/services/object_detection.py` (NEW)
+- `app/models/subtitle_models.py` (NEW)
+- `tests/services/test_subtitle_enhanced.py` (NEW)
+
+---
+
+## Story 1.3: UI Wizard Refresh
+**ID**: STORY-1.3  
+**Title**: Modern Streamlit-Based Video Generation Wizard  
+**Status**: Draft  
+**Priority**: Medium  
+**Story Points**: 5  
+**Epic**: Foundation & Core Enhancements  
+**Dependencies**: Stories 1.1, 1.2 (for integration)  
+
+### User Story
+**As a** user  
+**I want** a step-by-step wizard for video configuration  
+**So that** video generation is intuitive and I can preview results before final processing  
+
+### Acceptance Criteria
+1. **AC-1.3.1**: Create Streamlit-based wizard with step-by-step workflow (input → style → preview → generate)
+2. **AC-1.3.2**: Implement mobile-responsive design that works on tablets and phones
+3. **AC-1.3.3**: Add comprehensive error handling with user-friendly messages for invalid inputs
+4. **AC-1.3.4**: Provide real-time previews for script, subtitle positioning, and video style
+5. **AC-1.3.5**: Include progress indicators and estimated completion times
+
+### Technical Requirements
+- **TR-1.3.1**: Modernize existing Streamlit UI in `webui/Main.py`
+- **TR-1.3.2**: Implement responsive CSS and mobile-friendly components
+- **TR-1.3.3**: Add comprehensive form validation and error handling
+- **TR-1.3.4**: Create preview components for scripts, subtitles, and video styles
+- **TR-1.3.5**: Integrate with enhanced script and subtitle services
+
+### Definition of Done
+- [ ] **UI**: Modern wizard interface with step-by-step workflow
+- [ ] **Responsive**: Mobile-responsive design tested on multiple devices
+- [ ] **Validation**: Comprehensive input validation with clear error messages
+- [ ] **Preview**: Real-time preview functionality for all generation steps
+- [ ] **Integration**: UI integrated with enhanced script and subtitle services
+- [ ] **Testing**: UI/UX testing completed with accessibility compliance
+- [ ] **Documentation**: User guide and setup instructions
+
+### Files to Modify/Create
+- `webui/Main.py` (MAJOR MODIFY - modernize wizard)
+- `webui/components/wizard.py` (NEW)
+- `webui/components/preview.py` (NEW)
+- `webui/styles/modern.css` (NEW)
+- `tests/ui/test_wizard_flow.py` (NEW)
+
+---
+
+## Epic Summary
+**Total Story Points**: 21  
+**Estimated Duration**: 8-10 days  
+**Critical Path**: All stories can be developed in parallel with final integration  
+**Risk Level**: Medium - Integration complexity between services  
+
+**Dependencies Graph**:
+```
+Story 1.1 (Script) ──┐
+                     ├── Story 1.3 (UI Integration)
+Story 1.2 (Subtitle) ─┘
+```
+
+**Key Integration Points**:
+1. Script Generation Service → UI Wizard → Video Pipeline
+2. Subtitle Service → UI Preview → Video Pipeline  
+3. Error handling coordination across all services
+4. Performance monitoring and optimization across the stack

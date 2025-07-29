@@ -1,14 +1,22 @@
 {
   "name": "@moneyprinter/mcp-client",
   "version": "1.0.0",
-  "description": "TypeScript/JavaScript client SDK for MoneyPrinterTurbo MCP server",
-  "main": "dist/mcp-client.js",
-  "types": "dist/mcp-client.d.ts",
+  "description": "Vercel-compatible TypeScript/JavaScript client SDK for MoneyPrinterTurbo MCP server",
+  "main": "dist/mcp-client-vercel.js",
+  "types": "dist/mcp-client-vercel.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/mcp-client-vercel.js",
+      "require": "./dist/mcp-client-vercel.js",
+      "types": "./dist/mcp-client-vercel.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
+    "build:vercel": "tsc --project tsconfig.vercel.json",
     "dev": "tsc --watch",
     "test": "jest",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint *.ts",
     "prepare": "npm run build"
   },
   "keywords": [
@@ -16,12 +24,14 @@
     "model-context-protocol",
     "video-generation",
     "ai",
-    "websocket"
+    "vercel",
+    "serverless",
+    "http",
+    "fetch"
   ],
   "author": "MoneyPrinterTurbo Team",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/jest": "^29.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -30,14 +40,10 @@
     "ts-jest": "^29.0.0",
     "typescript": "^5.0.0"
   },
-  "dependencies": {
-    "ws": "^8.14.0"
-  },
-  "peerDependencies": {
-    "@types/ws": "^8.5.0"
-  },
+  "dependencies": {},
   "files": [
     "dist/**/*",
+    "*.ts",
     "README.md"
   ],
   "repository": {
@@ -48,5 +54,8 @@
   "bugs": {
     "url": "https://github.com/harry0703/MoneyPrinterTurbo/issues"
   },
-  "homepage": "https://github.com/harry0703/MoneyPrinterTurbo#readme"
+  "homepage": "https://github.com/harry0703/MoneyPrinterTurbo#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

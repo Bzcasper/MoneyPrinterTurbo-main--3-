@@ -20,6 +20,10 @@ services:
       - PYTHONPATH=/MoneyPrinterTurbo
       - HOST=0.0.0.0
       - PORT=8501
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     logging:
       driver: "json-file"
       options:
@@ -43,7 +47,8 @@ services:
       "--log-level", "info"
     ]
     volumes:
-      - ./storage:/MoneyPrinterTurbo/storage:rw
+      - ../:/MoneyPrinterTurbo:rw
+      - ../storage:/MoneyPrinterTurbo/storage:rw
     restart: unless-stopped
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
@@ -52,22 +57,20 @@ services:
       - ENVIRONMENT=production
       - ALLOWED_ORIGINS=http://localhost:8501,http://localhost:3000
       - TRUSTED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-          cpus: '2.0'
-        reservations:
-          memory: 2G
-          cpus: '1.0'
     logging:
       driver: "json-file"
       options:
@@ -127,20 +130,32 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
+  db:
+    image: postgres:15-alpine
+    container_name: moneyprinterturbo-postgres-new
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mpt
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   redis_data:
+    driver: local
+  postgres_data:
     driver: local

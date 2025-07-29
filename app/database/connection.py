@@ -8,6 +8,7 @@ a unified interface for database operations.
 import os
 import asyncio
 import logging
+import toml
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,7 +17,7 @@ import asyncpg
 from supabase import create_client, Client
 from supabase.lib.client_options import ClientOptions
 
-from ..models.exception import DatabaseConnectionError
+from app.models.exception import DatabaseConnectionError
 
 
 @dataclass
@@ -28,11 +29,6 @@ class ConnectionConfig:
     database_url: Optional[str] = None
     pool_size: int = 10
     timeout: int = 30
-
-
-class SupabaseConnectionError(Exception):
-    """Custom exception for Supabase connection errors."""
-    pass
 
 
 class SupabaseConnection:
@@ -50,17 +46,33 @@ class SupabaseConnection:
         self.is_connected = False
         
     def _load_config(self) -> ConnectionConfig:
-        """Load configuration from environment variables."""
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_ANON_KEY")
-        supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        database_url = os.getenv("SUPABASE_DATABASE_URL")
+        """Load configuration from config.toml file."""
+        try:
+            # Assuming config.toml is at the project root
+            config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.toml")
+            with open(config_path, "r") as f:
+                config_data = toml.load(f)
+        except (FileNotFoundError, toml.TomlDecodeError) as e:
+            raise DatabaseConnectionError(f"Error loading or parsing config.toml: {e}")
+
+        supabase_config = config_data.get("supabase", {})
+        database_config = config_data.get("database", {})
+
+        supabase_url = supabase_config.get("url")
+        supabase_key = supabase_config.get("key")
+        supabase_service_key = supabase_config.get("service_role_key")
         
+        # The database URL will now come from the [database] section
+        database_url = database_config.get("path")
+
         if not supabase_url or not supabase_key:
-            raise SupabaseConnectionError(
-                "SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required"
+            raise DatabaseConnectionError(
+                "Supabase URL and key are required in config.toml"
             )
-            
+        
+        if database_config.get("type") != "postgresql":
+            self.logger.warning("Database type is not set to 'postgresql' in config.toml.")
+
         return ConnectionConfig(
             supabase_url=supabase_url,
             supabase_key=supabase_key,
@@ -114,7 +126,7 @@ class SupabaseConnection:
             
         except Exception as e:
             self.logger.error(f"Failed to connect to Supabase: {str(e)}")
-            raise SupabaseConnectionError(f"Connection failed: {str(e)}")
+            raise DatabaseConnectionError(f"Connection failed: {str(e)}")
     
     async def disconnect(self):
         """Close all connections."""
@@ -142,7 +154,7 @@ class SupabaseConnection:
             Query result
         """
         if not self.pg_pool:
-            raise SupabaseConnectionError("PostgreSQL connection not available")
+            raise DatabaseConnectionError("PostgreSQL connection not available")
         
         try:
             async with self.pg_pool.acquire() as conn:
@@ -159,7 +171,7 @@ class SupabaseConnection:
                 
         except Exception as e:
             self.logger.error(f"SQL execution failed: {str(e)}")
-            raise SupabaseConnectionError(f"SQL execution failed: {str(e)}")
+            raise DatabaseConnectionError(f"SQL execution failed: {str(e)}")
     
     async def execute_rpc(self, function_name: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -173,7 +185,7 @@ class SupabaseConnection:
             Function result
         """
         if not self.client:
-            raise SupabaseConnectionError("Supabase client not connected")
+            raise DatabaseConnectionError("Supabase client not connected")
         
         try:
             result = self.client.rpc(function_name, params or {}).execute()
@@ -185,7 +197,7 @@ class SupabaseConnection:
             
         except Exception as e:
             self.logger.error(f"RPC execution failed: {str(e)}")
-            raise SupabaseConnectionError(f"RPC execution failed: {str(e)}")
+            raise DatabaseConnectionError(f"RPC execution failed: {str(e)}")
     
     def get_table(self, table_name: str):
         """
@@ -198,7 +210,7 @@ class SupabaseConnection:
             Table reference
         """
         if not self.client:
-            raise SupabaseConnectionError("Supabase client not connected")
+            raise DatabaseConnectionError("Supabase client not connected")
         
         return self.client.table(table_name)
     

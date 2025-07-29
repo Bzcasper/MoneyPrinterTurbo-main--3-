@@ -30,12 +30,15 @@ class SupabaseMigrator:
         self.logger = logging.getLogger(__name__)
         self.connection = get_supabase_connection()
         
-    async def run_sql(self, sql: str) -> Dict[str, Any]:
+    async def run_sql(self, sql: str, fetch: bool = False) -> Dict[str, Any]:
         """
-        Execute SQL command on Supabase.
+        Execute SQL command.
+        
+        Uses direct PostgreSQL connection if available, otherwise falls back to Supabase RPC.
         
         Args:
             sql: SQL command to execute
+            fetch: Whether to fetch results (for SELECT) or just execute (for DDL)
             
         Returns:
             Query result
@@ -47,7 +50,23 @@ class SupabaseMigrator:
             if not self.connection.is_connected:
                 await self.connection.connect(use_service_key=True)
             
-            # Use the beta SQL query tool if available
+            # Prefer direct PG connection
+            if self.connection.pg_pool:
+                self.logger.info(f"Executing SQL via asyncpg: {sql[:100]}...")
+                async with self.connection.pg_pool.acquire() as conn:
+                    if fetch:
+                        result = await conn.fetch(sql)
+                        return {
+                            "data": [dict(row) for row in result],
+                            "count": len(result),
+                            "status": "success"
+                        }
+                    else:
+                        await conn.execute(sql)
+                        return {"data": [], "count": 0, "status": "success"}
+
+            # Fallback to Supabase RPC
+            self.logger.info(f"Executing SQL via Supabase RPC: {sql[:100]}...")
             client = self.connection.client
             response = client.rpc('exec_sql', {'sql': sql}).execute()
             
@@ -72,16 +91,19 @@ class SupabaseMigrator:
         try:
             sql = f"""
                 SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'public'
                     AND table_name = '{table_name}'
                 );
             """
             
-            response = await self.run_sql(sql)
-            # Handle response format based on Supabase API
-            if hasattr(response, 'data') and response.data:
-                return response.data[0].get('exists', False)
+            response = await self.run_sql(sql, fetch=True)
+            
+            # Handle response from asyncpg or Supabase RPC
+            data = response.get("data") if isinstance(response, dict) else getattr(response, 'data', [])
+            
+            if data:
+                return data[0].get('exists', False)
             return False
             
         except Exception as e:
@@ -115,12 +137,12 @@ class SupabaseMigrator:
             if table_exists and force:
                 self.logger.info(f"Dropping existing table '{table_name}'")
                 drop_sql = f"DROP TABLE IF EXISTS {table_name} CASCADE;"
-                await self.run_sql(drop_sql)
+                await self.run_sql(drop_sql, fetch=False)
             
             # Create the table
             create_sql = get_create_table_sql(table_name)
             self.logger.info(f"Creating table '{table_name}'")
-            await self.run_sql(create_sql)
+            await self.run_sql(create_sql, fetch=False)
             
             self.logger.info(f"Table '{table_name}' created successfully")
             return True
@@ -191,7 +213,7 @@ class SupabaseMigrator:
                 USING (auth.uid() = id);
             """
             
-            await self.run_sql(auth_rls_sql)
+            await self.run_sql(auth_rls_sql, fetch=False)
             
             # Additional security policies
             security_sql = """
@@ -200,8 +222,8 @@ class SupabaseMigrator:
                 RETURNS BOOLEAN AS $$
                 BEGIN
                     RETURN EXISTS (
-                        SELECT 1 FROM users 
-                        WHERE auth_id = auth.uid() 
+                        SELECT 1 FROM users
+                        WHERE auth_id = auth.uid()
                         AND role = 'admin'
                     );
                 END;
@@ -212,14 +234,14 @@ class SupabaseMigrator:
                 RETURNS UUID AS $$
                 BEGIN
                     RETURN (
-                        SELECT id FROM users 
+                        SELECT id FROM users
                         WHERE auth_id = auth.uid()
                     );
                 END;
                 $$ LANGUAGE plpgsql SECURITY DEFINER;
             """
             
-            await self.run_sql(security_sql)
+            await self.run_sql(security_sql, fetch=False)
             
             self.logger.info("RLS policies set up successfully")
             return True
@@ -261,7 +283,7 @@ class SupabaseMigrator:
                 ON tasks(status, created_at) WHERE status IN ('pending', 'running');
             """
             
-            await self.run_sql(indexes_sql)
+            await self.run_sql(indexes_sql, fetch=False)
             
             self.logger.info("Performance indexes created successfully")
             return True
@@ -322,7 +344,7 @@ class SupabaseMigrator:
                     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
             """
             
-            await self.run_sql(triggers_sql)
+            await self.run_sql(triggers_sql, fetch=False)
             
             self.logger.info("Database triggers set up successfully")
             return True
@@ -439,7 +461,7 @@ class SupabaseMigrator:
             for table_name in tables_to_drop:
                 try:
                     drop_sql = f"DROP TABLE IF EXISTS {table_name} CASCADE;"
-                    await self.run_sql(drop_sql)
+                    await self.run_sql(drop_sql, fetch=False)
                     self.logger.info(f"Dropped table: {table_name}")
                 except Exception as e:
                     self.logger.warning(f"Failed to drop table {table_name}: {str(e)}")
@@ -451,7 +473,7 @@ class SupabaseMigrator:
                 DROP FUNCTION IF EXISTS get_current_user_id() CASCADE;
             """
             
-            await self.run_sql(functions_sql)
+            await self.run_sql(functions_sql, fetch=False)
             
             self.logger.info("Migration rollback completed")
             return True
