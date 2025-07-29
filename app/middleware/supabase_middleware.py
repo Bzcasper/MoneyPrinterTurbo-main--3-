@@ -18,7 +18,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from loguru import logger
 
 from app.database.connection import get_supabase_connection
-from app.models.exception import DatabaseConnectionError
+from app.models.exception import DatabaseConnectionError, SupabaseConnectionError
 from app.mcp.supabase_tools import supabase_mcp_tools
 from app.utils.redis_connection import get_redis_connection, RedisConnectionError
 

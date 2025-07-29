@@ -9,6 +9,7 @@ import os
 import asyncio
 import logging
 import toml
+import re
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
@@ -72,6 +73,24 @@ class SupabaseConnection:
         self.pg_pool: Optional[asyncpg.Pool] = None
         self.is_connected = False
         
+    def _resolve_env_variables(self, value: str) -> str:
+        """Resolve environment variable placeholders in config values."""
+        if not isinstance(value, str):
+            return value
+        
+        # Pattern to match ${VAR_NAME} format
+        pattern = r'\$\{([^}]+)\}'
+        
+        def replace_env_var(match):
+            env_var_name = match.group(1)
+            env_value = os.getenv(env_var_name)
+            if env_value is None:
+                self.logger.warning(f"Environment variable '{env_var_name}' not found, using placeholder as-is")
+                return match.group(0)  # Return original placeholder
+            return env_value
+        
+        return re.sub(pattern, replace_env_var, value)
+    
     def _load_config(self) -> ConnectionConfig:
         """Load configuration from config.toml file."""
         try:

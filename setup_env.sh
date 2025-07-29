@@ -1,0 +1,11 @@
+#!/bin/bash
+# Set Supabase environment variables for local development
+# Usage: source setup_env.sh
+
+export SUPABASE_URL="https://dlblqryvyavvveawduct.supabase.co"
+export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsYmxxcnl2eWF2dnZlYXdkdWN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwMDE4NjIsImV4cCI6MjA2NTU3Nzg2Mn0.aD5yE9QsfT9QJJGMsyKq_P3iaPK8ZNFQbQ-dbBJnXJ0"
+export SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsYmxxcnl2eWF2dnZlYXdkdWN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDAwMTg2MiwiZXhwIjoyMDY1NTc3ODYyfQ.ErisxFyLDM_7M2vkdS9karjcXr8KP8IlGoLJBlI6Mtg"
+
+echo "Supabase environment variables set successfully!"
+echo "SUPABASE_URL: $SUPABASE_URL"
+echo "SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:0:20}..."

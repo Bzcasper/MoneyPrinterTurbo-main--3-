@@ -14,14 +14,17 @@ services:
     command: ["/MoneyPrinterTurbo/start_webui.sh"]
     volumes: *common-volumes
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
       - HOST=0.0.0.0
       - PORT=8501
       - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+      - DATABASE_URL=postgresql://postgres.dlblqryvyavvveawduct:Bcmoney69$@aws-0-us-east-2.pooler.supabase.com:6543/postgres
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
     logging:
       driver: "json-file"
       options:
@@ -38,6 +41,8 @@ services:
     command: ["/MoneyPrinterTurbo/start_api.sh"]
     volumes: *common-volumes
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       - PYTHONPATH=/MoneyPrinterTurbo
       - HOST=0.0.0.0
@@ -45,9 +50,10 @@ services:
       - ENVIRONMENT=production
       - ALLOWED_ORIGINS=http://localhost:8501,http://localhost:3000
       - TRUSTED_HOSTS=localhost,127.0.0.1,0.0.0.0
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/app
+      - DATABASE_URL=postgresql://postgres.dlblqryvyavvveawduct:Bcmoney69$@aws-0-us-east-2.pooler.supabase.com:6543/postgres
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -110,7 +116,7 @@ services:
     container_name: moneyprinterturbo-mcp-new
     ports:
       - "8081:8081"
-    command: ["/MoneyPrinterTurbo/start_mcp_server.sh"]
+    command: ["python3", "-c", "import asyncio; import os; from app.mcp.server import MCPServer; asyncio.run(MCPServer(host=os.getenv('MCP_HOST', '0.0.0.0'), port=int(os.getenv('MCP_PORT', 8081))).start_server())"]
     volumes: *common-volumes
     restart: unless-stopped
     environment:
@@ -142,9 +148,9 @@ services:
     container_name: moneyprinterturbo-postgres-new
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app
+      - POSTGRES_USER=robertmcasper@gmail.com
+      - POSTGRES_PASSWORD=Bcmoney69$
+      - POSTGRES_DB=robertmcasper@gmail.com
     ports:
       - "5432:5432"
     volumes:

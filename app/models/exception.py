@@ -31,3 +31,30 @@ class FileNotFoundException(Exception):
 class DatabaseConnectionError(Exception):
     """Custom exception for database connection errors."""
     pass
+
+
+class SupabaseConnectionError(Exception):
+    """
+    Custom exception for Supabase connection-related errors.
+    
+    This exception is raised when there are issues specifically related to
+    Supabase connections, authentication, or service availability.
+    """
+    
+    def __init__(self, message: str, original_error: Exception = None):
+        """
+        Initialize SupabaseConnectionError.
+        
+        Args:
+            message: Error message describing the issue
+            original_error: Optional original exception that caused this error
+        """
+        super().__init__(message)
+        self.message = message
+        self.original_error = original_error
+    
+    def __str__(self) -> str:
+        """Return string representation of the error."""
+        if self.original_error:
+            return f"{self.message} (Original error: {str(self.original_error)})"
+        return self.message

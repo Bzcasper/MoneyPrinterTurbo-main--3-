@@ -243,11 +243,11 @@ class MCPServer:
                 {
                     "server": "MoneyPrinterTurbo MCP Server",
                     "version": "1.0.0",
-                    "capabilities": [cap.model_dump() for cap in self.protocol_handler.get_capabilities()],
+                    "capabilities": [cap.dict() for cap in self.protocol_handler.get_capabilities()],
                     "connection_id": connection_id
                 }
             )
-            await websocket.send(welcome_response.model_dump_json())
+            await websocket.send(welcome_response.dict())
             
             # Handle messages
             async for message in websocket:
@@ -327,7 +327,7 @@ class MCPServer:
             
             # Handle different method types
             if request.method == MCPMethodType.TOOLS_LIST:
-                result = [tool.model_dump() for tool in self.tools.registry.get_tools()]
+                result = [tool.dict() for tool in self.tools.registry.get_tools()]
                 
             elif request.method == MCPMethodType.TOOLS_CALL:
                 tool_name = request.params.get("name")
@@ -347,16 +347,16 @@ class MCPServer:
                     result = await self.tools.registry.call_tool(tool_name, tool_params, context)
                     
                     # Cache result if Redis is available
-                    if self.redis_client and tool_name in ["generate_video_script", "generate_video_terms"]:
+                    if self.redis_manager and tool_name in ["generate_video_script", "generate_video_terms"]:
                         cache_key = f"mcp_cache:{tool_name}:{hash(json.dumps(tool_params, sort_keys=True))}"
-                        self.redis_client.setex(cache_key, 3600, json.dumps(result))  # Cache for 1 hour
+                        await self.redis_manager.setex(cache_key, 3600, json.dumps(result))  # Cache for 1 hour
                         
             elif request.method == MCPMethodType.SERVICE_CAPABILITIES:
                 result = {
-                    "capabilities": [cap.model_dump() for cap in self.protocol_handler.get_capabilities()],
-                    "tools": [tool.model_dump() for tool in self.protocol_handler.get_tools()],
-                    "resources": [resource.model_dump() for resource in self.protocol_handler.get_resources()],
-                    "prompts": [prompt.model_dump() for prompt in self.protocol_handler.get_prompts()]
+                    "capabilities": [cap.dict() for cap in self.protocol_handler.get_capabilities()],
+                    "tools": [tool.dict() for tool in self.protocol_handler.get_tools()],
+                    "resources": [resource.dict() for resource in self.protocol_handler.get_resources()],
+                    "prompts": [prompt.dict() for prompt in self.protocol_handler.get_prompts()]
                 }
                 
             elif request.method == MCPMethodType.SERVICE_STATUS:
@@ -467,7 +467,7 @@ class MCPServer:
             "moneyprinter_mcp",
             f"ws://{self.host}:{self.port}",
             {
-                "capabilities": [cap.model_dump() for cap in self.protocol_handler.get_capabilities()],
+                "capabilities": [cap.dict() for cap in self.protocol_handler.get_capabilities()],
                 "tools": len(self.tools.registry.get_tools()),
                 "version": "1.0.0",
                 "redis_enabled": self.redis_manager is not None

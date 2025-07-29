@@ -3,6 +3,7 @@ from loguru import logger
 import os
 import sys
 import time
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -10,6 +11,78 @@ from app.router import root_api_router, configure_cors
 from app.models.exception import HttpException
 from app.middleware import RateLimitMiddleware
 from app.middleware.supabase_middleware import SupabaseMiddleware
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
+    app.state.start_time = time.time()
+    logger.info("MoneyPrinterTurbo API starting up...")
+
+    # Run database migrations
+    try:
+        from app.database.migrations import check_database_status, migrate_database
+        from app.database.connection import get_supabase_connection
+
+        # Ensure connection is established before checking status
+        db_connection = get_supabase_connection()
+        if not db_connection.is_connected:
+            await db_connection.connect(use_service_key=True)
+
+        status = await check_database_status()
+        if status.get('migration_needed', False):
+            logger.info("Database migration needed. Running migrations...")
+            migration_results = await migrate_database(force=False)
+            if migration_results.get('success', False):
+                logger.info("Database migration completed successfully.")
+            else:
+                logger.error(f"Database migration failed: {migration_results.get('errors')}")
+        else:
+            logger.info("Database schema is up to date.")
+    except Exception as e:
+        logger.error(f"Database migration check failed: {e}")
+
+    # Initialize GPU resources
+    try:
+        from app.services.gpu_manager import initialize_gpu_resources
+        gpu_manager = initialize_gpu_resources()
+        logger.info(f"GPU resources initialized: {len(gpu_manager.available_gpus)} GPUs available")
+    except Exception as e:
+        logger.warning(f"GPU initialization failed: {e}")
+    
+    # Initialize MCP server
+    try:
+        from app.controllers.v1.mcp import initialize_mcp_server
+        await initialize_mcp_server()
+        logger.info("MCP server initialized successfully")
+    except Exception as e:
+        logger.warning(f"MCP server initialization failed: {e}")
+
+    logger.info("MoneyPrinterTurbo API started successfully")
+    
+    yield  # Application is running
+    
+    # Shutdown
+    logger.info("MoneyPrinterTurbo API shutting down")
+    
+    # Shutdown MCP server
+    try:
+        from app.controllers.v1.mcp import shutdown_mcp_server
+        await shutdown_mcp_server()
+        logger.info("MCP server shutdown complete")
+    except Exception as e:
+        logger.warning(f"MCP server shutdown failed: {e}")
+    
+    # Stop GPU monitoring
+    try:
+        from app.services.gpu_manager import get_gpu_manager
+        gpu_manager = get_gpu_manager()
+        gpu_manager.stop_monitoring()
+    except Exception as e:
+        logger.warning(f"GPU cleanup failed: {e}")
+
+
 # Create FastAPI app with enhanced configuration
 app = FastAPI(
     title="MoneyPrinterTurbo API",
@@ -17,6 +90,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs" if os.getenv("ENVIRONMENT") != "production" else None,
     redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None,
+    lifespan=lifespan,
 )
 
 # Add security middleware
@@ -55,6 +129,28 @@ except Exception as e:
 
 # Configure CORS and include all API routers
 configure_cors(app)
+
+# Mount static files
+try:
+    from fastapi.staticfiles import StaticFiles
+    import os
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if os.path.exists(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+        logger.info("Static files mounted successfully")
+except Exception as e:
+    logger.warning(f"Static files mounting failed: {e}")
+
+# Add favicon route
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import FileResponse
+    import os
+    favicon_path = os.path.join(os.path.dirname(__file__), "static", "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path)
+    else:
+        raise HTTPException(status_code=404, detail="Favicon not found")
 
 # Global exception handler
 @app.exception_handler(HttpException)
@@ -142,74 +238,6 @@ async def health_check():
         health_status["services"]["gpu"] = f"unavailable: {str(e)}"
     
     return health_status
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
-    app.state.start_time = time.time()
-    logger.info("MoneyPrinterTurbo API starting up...")
-
-    # Run database migrations
-    try:
-        from app.database.migrations import check_database_status, migrate_database
-        from app.database.connection import get_supabase_connection
-
-        # Ensure connection is established before checking status
-        db_connection = get_supabase_connection()
-        if not db_connection.is_connected:
-            await db_connection.connect(use_service_key=True)
-
-        status = await check_database_status()
-        if status.get('migration_needed', False):
-            logger.info("Database migration needed. Running migrations...")
-            migration_results = await migrate_database(force=False)
-            if migration_results.get('success', False):
-                logger.info("Database migration completed successfully.")
-            else:
-                logger.error(f"Database migration failed: {migration_results.get('errors')}")
-        else:
-            logger.info("Database schema is up to date.")
-    except Exception as e:
-        logger.error(f"Database migration check failed: {e}")
-
-    # Initialize GPU resources
-    try:
-        from app.services.gpu_manager import initialize_gpu_resources
-        gpu_manager = initialize_gpu_resources()
-        logger.info(f"GPU resources initialized: {len(gpu_manager.available_gpus)} GPUs available")
-    except Exception as e:
-        logger.warning(f"GPU initialization failed: {e}")
-    
-    # Initialize MCP server
-    try:
-        from app.controllers.v1.mcp import initialize_mcp_server
-        await initialize_mcp_server()
-        logger.info("MCP server initialized successfully")
-    except Exception as e:
-        logger.warning(f"MCP server initialization failed: {e}")
-
-    logger.info("MoneyPrinterTurbo API started successfully")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("MoneyPrinterTurbo API shutting down")
-    
-    # Shutdown MCP server
-    try:
-        from app.controllers.v1.mcp import shutdown_mcp_server
-        await shutdown_mcp_server()
-        logger.info("MCP server shutdown complete")
-    except Exception as e:
-        logger.warning(f"MCP server shutdown failed: {e}")
-    
-    # Stop GPU monitoring
-    try:
-        from app.services.gpu_manager import get_gpu_manager
-        gpu_manager = get_gpu_manager()
-        gpu_manager.stop_monitoring()
-    except Exception as e:
-        logger.warning(f"GPU cleanup failed: {e}")
 
 
 if __name__ == "__main__":
