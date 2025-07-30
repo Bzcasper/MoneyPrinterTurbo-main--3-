@@ -1,0 +1,80 @@
+# MoneyPrinterTurbo - Core Application Configuration
+# This file contains core application settings and behavior
+
+[app]
+# Application Metadata
+title = "MoneyPrinterTurbo"
+version = "2.0.0"
+debug = false
+log_level = "INFO"
+
+# Video Generation Core Settings
+video_source = "pixabay" # Options: "pexels" or "pixabay"
+default_format = "youtube_shorts" # youtube_shorts, instagram_reels, tiktok, landscape, square
+default_duration = 30 # seconds
+max_duration = 60 # seconds
+default_resolution = "1080x1920" # 1080x1920 for vertical, 1920x1080 for landscape
+max_concurrent_tasks = 5
+
+# User Interface
+hide_config = false
+hide_log = false
+
+# Material Storage
+material_directory = "" # Empty = default (./storage/cache_videos), "task" = per-task folder
+endpoint = "" # External domain for video downloads (e.g., https://domain.com)
+
+# Browser Telemetry
+[browser]
+gatherUsageStats = false
+
+# Video Processing Settings
+[video]
+enable_gpu_acceleration = true
+enable_auto_subtitles = true
+subtitle_font_size = 48
+subtitle_color = "white"
+subtitle_stroke_color = "black"
+subtitle_stroke_width = 2
+
+# Media Processing Tools
+[tools]
+imagemagick_path = "/usr/bin/convert"
+ffmpeg_path = "/usr/bin/ffmpeg"
+
+# Text-to-Speech Core Settings
+[tts]
+subtitle_provider = "edge" # Options: "edge" or "whisper"
+
+[tts.whisper]
+model_size = "large-v3"
+device = "CPU" # Options: "CPU" or "cuda"
+compute_type = "int8"
+
+# Feature Flags
+[features]
+experimental_ai_avatars = false
+batch_processing = true
+multilingual_subtitles = true
+caching_enabled = true
+gpu_acceleration = true
+async_processing = true
+advanced_editor = false
+real_time_preview = false
+template_library = true
+
+# Environment-Specific Overrides
+[environments.development]
+debug = true
+log_level = "DEBUG"
+max_concurrent_tasks = 2
+
+[environments.production]
+debug = false
+log_level = "INFO"
+max_concurrent_tasks = 10
+
+[environments.testing]
+debug = true
+log_level = "DEBUG"
+max_concurrent_tasks = 1

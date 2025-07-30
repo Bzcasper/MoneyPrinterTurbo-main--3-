@@ -1,0 +1,351 @@
+# MoneyPrinterTurbo - Aggregated Configuration
+# This file consolidates all configuration settings from multiple config files
+# Generated on: 2025-07-29
+# Source files: config.toml, app/config.toml, app/config/config.example.toml, config.mcp.example.toml, .env.example
+
+# =============================================================================
+# APPLICATION CORE SETTINGS
+# =============================================================================
+
+[app]
+# Basic application metadata
+title = "MoneyPrinterTurbo with MCP"
+version = "2.0.0"
+debug = false
+log_level = "INFO"
+
+# Video generation settings
+video_source = "pixabay" # Options: "pexels" or "pixabay"
+default_format = "youtube_shorts" # Options: youtube_shorts, instagram_reels, tiktok, landscape, square
+default_duration = 30 # seconds
+max_duration = 60 # seconds
+default_resolution = "1080x1920" # 1080x1920 for vertical, 1920x1080 for landscape
+max_concurrent_tasks = 5
+
+# UI configuration
+hide_config = false
+hide_log = false
+
+# Material storage
+material_directory = "" # Empty = default folder (./storage/cache_videos)
+endpoint = "" # External endpoint for video downloads (e.g., https://domain.com)
+
+# Browser settings
+[browser]
+gatherUsageStats = false
+
+# =============================================================================
+# EXTERNAL SERVICE PROVIDERS
+# =============================================================================
+
+# Video Source APIs
+[video_sources.pexels]
+api_keys = ["your_pexels_key_here"]
+
+[video_sources.pixabay]
+api_keys = ["46693365-cf8143b99556595ef68972852"]
+
+# Large Language Model Providers
+[llm]
+provider = "gemini" # Options: openai, moonshot, azure, qwen, deepseek, gemini, ollama, g4f, oneapi, cloudflare, ernie
+
+[llm.openai]
+api_key = "your_openai_key_here"
+base_url = ""
+model_name = "gpt-4o-mini"
+
+[llm.moonshot]
+api_key = ""
+base_url = "https://api.moonshot.cn/v1"
+model_name = "moonshot-v1-8k"
+
+[llm.azure]
+api_key = ""
+base_url = ""
+model_name = "gpt-35-turbo"
+api_version = "2024-02-15-preview"
+
+[llm.gemini]
+api_key = "AIzaSyAp9IqLHulnWCCGIv8umVmobJqR917vTEw"
+model_name = "gemini-2.5-pro"
+
+[llm.qwen]
+api_key = ""
+model_name = "qwen-max"
+
+[llm.deepseek]
+api_key = ""
+base_url = "https://api.deepseek.com"
+model_name = "deepseek-chat"
+
+[llm.ollama]
+base_url = ""
+model_name = ""
+
+[llm.oneapi]
+api_key = ""
+base_url = ""
+model_name = ""
+
+[llm.g4f]
+model_name = "gpt-3.5-turbo"
+
+[llm.pollinations]
+api_key = ""
+base_url = "https://pollinations.ai/api/v1"
+model_name = "openai-fast"
+
+# Text-to-Speech Services
+[tts]
+subtitle_provider = "edge" # Options: "edge" or "whisper"
+
+[tts.azure]
+speech_key = ""
+speech_region = ""
+
+[tts.whisper]
+model_size = "large-v3"
+device = "CPU" # Options: "CPU" or "cuda"
+compute_type = "int8"
+
+[tts.gpt_sovits]
+api_base_url = "http://localhost:9880"
+api_key = ""
+timeout = 60
+models_dir = "models/gpt_sovits"
+
+# Other AI Services
+[ai_services.siliconflow]
+api_key = ""
+
+# =============================================================================
+# INFRASTRUCTURE SETTINGS
+# =============================================================================
+
+# Database Configuration
+[database]
+type = "postgresql" # Options: sqlite, memory, postgresql
+path = "${DATABASE_URL}"
+fallback_to_memory = false
+pool_size = 10
+timeout = 30
+
+# Supabase Configuration
+[supabase]
+url = "${SUPABASE_URL}"
+anon_key = "${SUPABASE_ANON_KEY}"
+key = "${SUPABASE_ANON_KEY}"
+service_role_key = "${SUPABASE_SERVICE_ROLE_KEY}"
+
+# Redis Configuration
+[redis]
+enabled = true
+host = "redis"
+port = 6379
+db = 0
+password = ""
+
+# =============================================================================
+# MCP (MODEL CONTEXT PROTOCOL) CONFIGURATION
+# =============================================================================
+
+[mcp]
+# Server Configuration
+enabled = true
+server_host = "0.0.0.0"
+server_port = 8081
+max_connections = 100
+
+# Rate Limiting
+rate_limit_requests = 100
+rate_limit_window = 60
+
+# Authentication
+jwt_secret = "${JWT_SECRET:-your-secret-key-CHANGE-IN-PRODUCTION}"
+jwt_algorithm = "HS256"
+jwt_expiration = 3600
+
+# Circuit Breaker
+circuit_breaker_threshold = 5
+circuit_breaker_timeout = 60
+
+# Service Discovery
+heartbeat_interval = 30
+health_check_interval = 10
+service_timeout = 90
+
+# API Keys for MCP Access
+[mcp.api_keys]
+admin_key = { name = "Admin User", role = "admin", active = true }
+user_key = { name = "Regular User", role = "user", active = true }
+
+# HMAC Client Authentication
+[mcp.client_secrets]
+"client_001" = "hmac_secret_for_client_001"
+"client_002" = "hmac_secret_for_client_002"
+
+[mcp.client_roles]
+"client_001" = "admin"
+"client_002" = "user"
+
+# =============================================================================
+# MEDIA PROCESSING TOOLS
+# =============================================================================
+
+[tools]
+# ImageMagick Configuration
+imagemagick_path = "/usr/bin/convert"
+
+# FFmpeg Configuration
+ffmpeg_path = "/usr/bin/ffmpeg"
+
+# =============================================================================
+# VIDEO GENERATION SETTINGS
+# =============================================================================
+
+[video]
+# GPU Acceleration
+enable_gpu_acceleration = true
+
+# Subtitle Configuration
+enable_auto_subtitles = true
+subtitle_font_size = 48
+subtitle_color = "white"
+subtitle_stroke_color = "black"
+subtitle_stroke_width = 2
+
+# =============================================================================
+# NETWORK & PROXY SETTINGS
+# =============================================================================
+
+[proxy]
+# HTTP/HTTPS proxy settings
+# Format: "http://<username>:<password>@<proxy>:<port>"
+# http = "http://10.10.1.10:3128"
+# https = "http://10.10.1.10:1080"
+
+# =============================================================================
+# SECURITY SETTINGS
+# =============================================================================
+
+[security]
+# Environment Variables (for sensitive data)
+# These should be set in .env file or environment
+# - JWT_SECRET: JWT secret key for authentication
+# - DATABASE_URL: Full database connection string
+# - SUPABASE_URL: Supabase project URL
+# - SUPABASE_ANON_KEY: Supabase anonymous key
+# - SUPABASE_SERVICE_ROLE_KEY: Supabase service role key
+
+# File Security
+max_file_size_mb = 100
+supported_formats = "mp4,avi,mov,wmv"
+
+# Session Security
+secret_key = "${SECRET_KEY:-your-secret-key-for-sessions}"
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+
+[storage]
+backend = "local" # Options: local, s3, gcs
+
+# AWS S3 Configuration
+[storage.aws]
+access_key_id = "${AWS_ACCESS_KEY_ID}"
+secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
+bucket_name = "${AWS_BUCKET_NAME}"
+region = "us-east-1"
+
+# Google Cloud Storage Configuration
+[storage.gcs]
+bucket_name = "${GCS_BUCKET_NAME}"
+key_file = "${GCS_KEY_FILE}"
+
+# =============================================================================
+# ENVIRONMENT-SPECIFIC OVERRIDES
+# =============================================================================
+
+# Development Environment
+[environments.development]
+debug = true
+log_level = "DEBUG"
+max_concurrent_tasks = 2
+
+# Production Environment
+[environments.production]
+debug = false
+log_level = "INFO"
+max_concurrent_tasks = 10
+
+# Testing Environment
+[environments.testing]
+debug = true
+log_level = "DEBUG"
+database_type = "memory"
+max_concurrent_tasks = 1
+
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
+
+[features]
+# Experimental Features
+experimental_ai_avatars = false
+batch_processing = true
+multilingual_subtitles = true
+
+# Performance Features
+caching_enabled = true
+gpu_acceleration = true
+async_processing = true
+
+# UI Features
+advanced_editor = false
+real_time_preview = false
+template_library = true
+
+# =============================================================================
+# LOGGING & MONITORING
+# =============================================================================
+
+[logging]
+level = "INFO"
+format = "structured" # Options: simple, structured, json
+file_path = "logs/app.log"
+max_file_size = "10MB"
+backup_count = 5
+
+[monitoring]
+enable_metrics = true
+metrics_port = 9090
+health_check_endpoint = "/health"
+ready_check_endpoint = "/ready"
+
+# =============================================================================
+# MIGRATION NOTES
+# =============================================================================
+
+# This configuration file aggregates settings from:
+# 1. /config.toml (root level)
+# 2. /app/config.toml (app level - duplicate of root)
+# 3. /app/config/config.example.toml (example template)
+# 4. /config.mcp.example.toml (MCP configuration example)
+# 5. /.env.example (environment variables template)
+# 6. /app/docker-compose.yml (container configuration)
+# 7. /app/config/postgres.toml (PostgreSQL testcontainer config)
+
+# Migration Strategy:
+# 1. Use environment variables for all sensitive data
+# 2. Provide sane defaults for all configuration options
+# 3. Support environment-specific overrides
+# 4. Maintain backward compatibility during transition
+# 5. Validate configuration on application startup
+
+# Security Considerations:
+# - All API keys and secrets should use environment variables
+# - Never commit actual credentials to version control
+# - Use strong, unique secrets for JWT and session keys
+# - Regularly rotate API keys and access tokens
+# - Implement proper access controls for configuration files

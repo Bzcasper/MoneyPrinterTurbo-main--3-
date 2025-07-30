@@ -1,0 +1,295 @@
+# MoneyPrinterTurbo - MCP (Model Context Protocol) Configuration
+# Advanced MCP server settings, authentication, and service discovery
+
+# =============================================================================
+# MCP SERVER CORE CONFIGURATION
+# =============================================================================
+
+[mcp]
+# Enable/Disable MCP functionality
+enabled = true
+
+# Server Network Settings
+server_host = "0.0.0.0"
+server_port = 8081
+max_connections = 100
+socket_timeout = 30
+
+# Protocol Settings
+protocol_version = "2024-11-05"
+capabilities = ["prompts", "resources", "tools", "logging"]
+
+# =============================================================================
+# AUTHENTICATION & AUTHORIZATION
+# =============================================================================
+
+[mcp.auth]
+# JWT Authentication
+jwt_enabled = true
+jwt_secret = "${JWT_SECRET:-your-secret-key-CHANGE-IN-PRODUCTION}"
+jwt_algorithm = "HS256"
+jwt_expiration = 3600 # 1 hour
+jwt_refresh_enabled = true
+jwt_refresh_expiration = 86400 # 24 hours
+
+# API Key Authentication
+api_key_enabled = true
+api_key_header = "X-API-Key"
+
+# HMAC Authentication
+hmac_enabled = true
+hmac_algorithm = "sha256"
+hmac_header = "X-HMAC-Signature"
+hmac_timestamp_header = "X-HMAC-Timestamp"
+hmac_tolerance = 300 # 5 minutes
+
+# Multi-factor Authentication
+mfa_enabled = false
+mfa_issuer = "MoneyPrinterTurbo"
+
+# =============================================================================
+# API KEYS & CLIENT MANAGEMENT
+# =============================================================================
+
+[mcp.api_keys]
+# Predefined API keys with roles and permissions
+# Format: key_id = { name = "Display Name", role = "role", active = true, created = "timestamp" }
+admin_key = { name = "Admin User", role = "admin", active = true, created = "2024-01-01T00:00:00Z" }
+user_key = { name = "Regular User", role = "user", active = true, created = "2024-01-01T00:00:00Z" }
+viewer_key = { name = "Viewer User", role = "viewer", active = true, created = "2024-01-01T00:00:00Z" }
+
+# API Key Permissions by Role
+[mcp.roles.admin]
+permissions = ["read", "write", "delete", "manage_users", "system_config", "view_logs"]
+rate_limit = 1000
+rate_window = 60
+
+[mcp.roles.user]
+permissions = ["read", "write", "create_videos", "manage_own_content"]
+rate_limit = 100
+rate_window = 60
+
+[mcp.roles.viewer]
+permissions = ["read", "view_content"]
+rate_limit = 50
+rate_window = 60
+
+# =============================================================================
+# HMAC CLIENT CONFIGURATION
+# =============================================================================
+
+[mcp.hmac_clients]
+# HMAC client secrets for secure API access
+# Format: client_id = "secret"
+"client_001" = "${HMAC_CLIENT_001_SECRET:-hmac_secret_for_client_001}"
+"client_002" = "${HMAC_CLIENT_002_SECRET:-hmac_secret_for_client_002}"
+"client_003" = "${HMAC_CLIENT_003_SECRET:-hmac_secret_for_client_003}"
+
+# Client Role Assignments
+[mcp.client_roles]
+"client_001" = "admin"
+"client_002" = "user"
+"client_003" = "viewer"
+
+# =============================================================================
+# RATE LIMITING & THROTTLING
+# =============================================================================
+
+[mcp.rate_limiting]
+# Global Rate Limits
+enabled = true
+requests_per_minute = 100
+requests_per_hour = 1000
+requests_per_day = 10000
+
+# Per-endpoint Rate Limits
+[mcp.rate_limiting.endpoints]
+"/api/v1/generate" = { rpm = 10, rph = 100 }
+"/api/v1/upload" = { rpm = 5, rph = 50 }
+"/api/v1/status" = { rpm = 60, rph = 600 }
+
+# Rate Limit Storage
+storage_backend = "redis" # Options: memory, redis, database
+cleanup_interval = 3600 # 1 hour
+
+# =============================================================================
+# CIRCUIT BREAKER CONFIGURATION
+# =============================================================================
+
+[mcp.circuit_breaker]
+# Enable circuit breaker pattern for resilience
+enabled = true
+
+# Failure Thresholds
+failure_threshold = 5
+success_threshold = 3
+timeout = 60 # seconds
+
+# Monitoring Windows
+request_volume_threshold = 20
+error_threshold_percentage = 50
+sleep_window = 30 # seconds
+
+# =============================================================================
+# SERVICE DISCOVERY & HEALTH MONITORING
+# =============================================================================
+
+[mcp.service_discovery]
+# Service Registration
+enabled = true
+service_name = "moneyprinter-mcp"
+service_version = "2.0.0"
+service_tags = ["mcp", "video", "ai"]
+
+# Health Check Configuration
+heartbeat_interval = 30 # seconds
+health_check_interval = 10 # seconds
+service_timeout = 90 # seconds
+
+# Service Registry
+registry_type = "consul" # Options: consul, etcd, redis, database
+registry_url = "${SERVICE_REGISTRY_URL:-http://localhost:8500}"
+
+# =============================================================================
+# MESSAGING & EVENTS
+# =============================================================================
+
+[mcp.messaging]
+# Event System
+events_enabled = true
+event_bus = "redis" # Options: memory, redis, rabbitmq, kafka
+
+# Message Queues
+queue_enabled = true
+queue_backend = "redis" # Options: memory, redis, rabbitmq, sqs
+default_queue = "mcp_tasks"
+
+# Pub/Sub Configuration
+pubsub_enabled = true
+pubsub_channels = ["system_events", "user_actions", "video_generation"]
+
+# =============================================================================
+# CACHING & PERFORMANCE
+# =============================================================================
+
+[mcp.caching]
+# Response Caching
+enabled = true
+default_ttl = 300 # 5 minutes
+max_cache_size = "100MB"
+
+# Cache Strategies
+[mcp.caching.strategies]
+# Prompt caching
+prompts = { ttl = 3600, max_size = "10MB" }
+# Resource caching
+resources = { ttl = 1800, max_size = "50MB" }
+# Tool result caching
+tools = { ttl = 600, max_size = "20MB" }
+
+# =============================================================================
+# LOGGING & DEBUGGING
+# =============================================================================
+
+[mcp.logging]
+# MCP-specific Logging
+level = "INFO"
+format = "structured"
+include_request_id = true
+include_client_info = true
+
+# Request/Response Logging
+log_requests = true
+log_responses = false # May contain sensitive data
+log_slow_queries = true
+slow_query_threshold = 1000 # milliseconds
+
+# Debug Settings
+debug_mode = false
+trace_enabled = false
+profile_enabled = false
+
+# =============================================================================
+# SECURITY HARDENING
+# =============================================================================
+
+[mcp.security]
+# Request Validation
+validate_requests = true
+max_request_size = "10MB"
+timeout_seconds = 30
+
+# Content Security
+sanitize_inputs = true
+escape_outputs = true
+validate_json_schema = true
+
+# SSL/TLS Settings
+tls_enabled = false
+cert_file = "${MCP_TLS_CERT_FILE:-}"
+key_file = "${MCP_TLS_KEY_FILE:-}"
+ca_file = "${MCP_TLS_CA_FILE:-}"
+
+# CORS Configuration
+cors_enabled = true
+cors_origins = ["*"] # Restrict in production
+cors_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+cors_headers = ["Content-Type", "Authorization", "X-API-Key", "X-HMAC-Signature"]
+
+# =============================================================================
+# WEBSOCKET CONFIGURATION
+# =============================================================================
+
+[mcp.websocket]
+# Real-time Communication
+enabled = true
+max_connections = 1000
+ping_interval = 30 # seconds
+ping_timeout = 10 # seconds
+max_message_size = "1MB"
+
+# Connection Management
+idle_timeout = 300 # 5 minutes
+heartbeat_enabled = true
+reconnect_enabled = true
+max_reconnect_attempts = 5
+
+# =============================================================================
+# INTEGRATION SETTINGS
+# =============================================================================
+
+[mcp.integrations]
+# Claude Integration
+claude_enabled = true
+claude_models = ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"]
+
+# OpenAI Integration
+openai_enabled = true
+openai_models = ["gpt-4", "gpt-3.5-turbo"]
+
+# Custom Tool Integration
+custom_tools_enabled = true
+custom_tools_path = "mcp/tools"
+custom_tools_reload = true
+
+# =============================================================================
+# MONITORING & METRICS
+# =============================================================================
+
+[mcp.monitoring]
+# Prometheus Metrics
+metrics_enabled = true
+metrics_port = 9091
+metrics_path = "/mcp/metrics"
+
+# Performance Metrics
+track_request_duration = true
+track_queue_sizes = true
+track_cache_hit_rates = true
+track_error_rates = true
+
+# Custom Metrics
+[mcp.monitoring.custom]
+video_generation_count = { type = "counter", description = "Total videos generated" }
+api_response_time = { type = "histogram", description = "API response times" }
+active_connections = { type = "gauge", description = "Active MCP connections" }

@@ -1,0 +1,265 @@
+# MoneyPrinterTurbo - Infrastructure Configuration
+# Database, caching, storage, and deployment settings
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+
+[database]
+# Database type selection
+type = "postgresql" # Options: sqlite, memory, postgresql
+path = "${DATABASE_URL}"
+fallback_to_memory = false
+
+# Connection Pool Settings
+pool_size = 10
+min_connections = 2
+max_connections = 20
+timeout = 30
+connection_timeout = 10
+idle_timeout = 300
+
+# PostgreSQL Specific Settings
+[database.postgresql]
+# Connection string format: postgresql://user:password@host:port/database
+host = "${DB_HOST:-localhost}"
+port = "${DB_PORT:-5432}"
+database = "${DB_NAME:-moneyprinter}"
+username = "${DB_USER:-postgres}"
+password = "${DB_PASSWORD:-}"
+sslmode = "${DB_SSLMODE:-prefer}"
+
+# SQLite Specific Settings
+[database.sqlite]
+path = "data/moneyprinter.db"
+journal_mode = "WAL"
+synchronous = "NORMAL"
+
+# =============================================================================
+# SUPABASE CONFIGURATION
+# =============================================================================
+
+[supabase]
+# Supabase Project Configuration
+# Get these values from your Supabase project settings -> API
+url = "${SUPABASE_URL}"
+anon_key = "${SUPABASE_ANON_KEY}"
+service_role_key = "${SUPABASE_SERVICE_ROLE_KEY}"
+
+# Connection Settings
+timeout = 30
+max_retries = 3
+pool_size = 10
+
+# =============================================================================
+# REDIS CONFIGURATION
+# =============================================================================
+
+[redis]
+# Redis Cache and Session Storage
+enabled = true
+host = "${REDIS_HOST:-redis}"
+port = "${REDIS_PORT:-6379}"
+db = "${REDIS_DB:-0}"
+password = "${REDIS_PASSWORD:-}"
+
+# Connection Pool Settings
+max_connections = 50
+socket_timeout = 30
+socket_connect_timeout = 30
+
+# Clustering (if using Redis Cluster)
+cluster_enabled = false
+cluster_nodes = []
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+
+[storage]
+# Storage backend selection
+backend = "local" # Options: local, s3, gcs, azure_blob
+
+# Local Storage Settings
+[storage.local]
+base_path = "storage"
+temp_path = "storage/temp"
+cache_path = "storage/cache"
+max_file_size = "100MB"
+
+# AWS S3 Configuration
+[storage.s3]
+access_key_id = "${AWS_ACCESS_KEY_ID}"
+secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
+bucket_name = "${AWS_BUCKET_NAME}"
+region = "${AWS_REGION:-us-east-1}"
+endpoint_url = "${AWS_ENDPOINT_URL:-}" # For S3-compatible services
+
+# Google Cloud Storage Configuration
+[storage.gcs]
+bucket_name = "${GCS_BUCKET_NAME}"
+credentials_path = "${GCS_CREDENTIALS_PATH}"
+project_id = "${GCS_PROJECT_ID}"
+
+# Azure Blob Storage Configuration
+[storage.azure_blob]
+account_name = "${AZURE_STORAGE_ACCOUNT_NAME}"
+account_key = "${AZURE_STORAGE_ACCOUNT_KEY}"
+container_name = "${AZURE_STORAGE_CONTAINER_NAME}"
+
+# =============================================================================
+# DOCKER & CONTAINER CONFIGURATION
+# =============================================================================
+
+[docker]
+# Container Registry Settings
+registry = "${DOCKER_REGISTRY:-}"
+namespace = "${DOCKER_NAMESPACE:-moneyprinter}"
+tag = "${DOCKER_TAG:-latest}"
+
+# Resource Limits
+memory_limit = "2g"
+cpu_limit = "1"
+restart_policy = "unless-stopped"
+
+# Network Settings
+network_mode = "bridge"
+expose_ports = ["8501", "8080", "8081"]
+
+# =============================================================================
+# DEPLOYMENT CONFIGURATION
+# =============================================================================
+
+[deployment]
+# Environment Type
+environment = "${DEPLOYMENT_ENV:-development}" # development, staging, production
+
+# Health Check Settings
+health_check_path = "/health"
+health_check_interval = "30s"
+health_check_timeout = "10s"
+health_check_retries = 3
+
+# Scaling Settings
+min_replicas = 1
+max_replicas = 5
+target_cpu_utilization = 70
+
+# =============================================================================
+# MONITORING & OBSERVABILITY
+# =============================================================================
+
+[monitoring]
+# Metrics Collection
+enable_metrics = true
+metrics_port = 9090
+metrics_path = "/metrics"
+
+# Health Checks
+health_check_endpoint = "/health"
+ready_check_endpoint = "/ready"
+liveness_check_endpoint = "/live"
+
+# Application Performance Monitoring
+apm_enabled = false
+apm_service_name = "moneyprinter-turbo"
+apm_environment = "${DEPLOYMENT_ENV:-development}"
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+
+[logging]
+# Log Level and Format
+level = "${LOG_LEVEL:-INFO}"
+format = "structured" # Options: simple, structured, json
+timestamp_format = "iso"
+
+# File Logging
+file_enabled = true
+file_path = "logs/app.log"
+max_file_size = "10MB"
+backup_count = 5
+rotation = "daily"
+
+# Console Logging
+console_enabled = true
+console_format = "simple"
+
+# External Logging Services
+[logging.external]
+# Sentry Error Tracking
+sentry_enabled = false
+sentry_dsn = "${SENTRY_DSN:-}"
+sentry_environment = "${DEPLOYMENT_ENV:-development}"
+
+# ELK Stack / OpenSearch
+elasticsearch_enabled = false
+elasticsearch_url = "${ELASTICSEARCH_URL:-}"
+elasticsearch_index = "moneyprinter-logs"
+
+# =============================================================================
+# BACKUP & RECOVERY
+# =============================================================================
+
+[backup]
+# Database Backup Settings
+enabled = true
+schedule = "0 2 * * *" # Daily at 2 AM
+retention_days = 30
+backup_path = "backups/database"
+
+# Storage Backup Settings
+storage_backup_enabled = false
+storage_backup_schedule = "0 3 * * 0" # Weekly on Sunday at 3 AM
+storage_retention_days = 90
+
+# =============================================================================
+# CACHING CONFIGURATION
+# =============================================================================
+
+[cache]
+# Application-level Caching
+enabled = true
+default_ttl = 300 # 5 minutes
+max_size = "100MB"
+
+# Cache Layers
+[cache.layers]
+# Memory cache (fastest)
+memory_enabled = true
+memory_size = "50MB"
+
+# Redis cache (persistent)
+redis_enabled = true
+redis_ttl = 3600 # 1 hour
+
+# File cache (for large objects)
+file_enabled = true
+file_path = "storage/cache"
+file_ttl = 86400 # 24 hours
+
+# =============================================================================
+# SECURITY CONFIGURATION
+# =============================================================================
+
+[security]
+# File Upload Security
+max_file_size = "100MB"
+allowed_extensions = ["mp4", "avi", "mov", "wmv", "png", "jpg", "jpeg", "gif"]
+scan_uploads = true
+
+# Network Security
+allowed_origins = ["*"] # Restrict in production
+cors_enabled = true
+csrf_protection = true
+
+# Rate Limiting
+rate_limit_enabled = true
+rate_limit_requests = 100
+rate_limit_window = 60 # seconds
+
+# Session Security
+session_timeout = 3600 # 1 hour
+secure_cookies = true
+same_site_cookies = "strict"

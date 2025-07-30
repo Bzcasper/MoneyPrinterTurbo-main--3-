@@ -19,7 +19,8 @@
         "get_project",
         "execute_query",
         "generate_typescript_types",
-        "listProjects"
+        "listProjects",
+        "deploy_edge_function"
       ]
     },
     "mem0": {

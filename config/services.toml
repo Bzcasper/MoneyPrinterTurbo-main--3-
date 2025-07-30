@@ -1,0 +1,172 @@
+# MoneyPrinterTurbo - External Services Configuration
+# API keys, external service providers, and third-party integrations
+
+# =============================================================================
+# VIDEO SOURCE PROVIDERS
+# =============================================================================
+
+[video_sources.pexels]
+# Register at https://www.pexels.com/api/ to get your API key
+# Multiple keys can be used to avoid rate limits
+# Format: ["key1", "key2", "key3"]
+api_keys = ["${PEXELS_API_KEY:-your_pexels_key_here}"]
+
+[video_sources.pixabay]
+# Register at https://pixabay.com/api/docs/ to get your API key
+# Multiple keys can be used to avoid rate limits
+# Format: ["key1", "key2", "key3"]
+api_keys = ["${PIXABAY_API_KEY:-46693365-cf8143b99556595ef68972852}"]
+
+# =============================================================================
+# LARGE LANGUAGE MODEL PROVIDERS
+# =============================================================================
+
+[llm]
+# Primary LLM provider selection
+# Options: openai, moonshot, azure, qwen, deepseek, gemini, ollama, g4f, oneapi, cloudflare, ernie
+provider = "gemini"
+
+[llm.openai]
+# Get your API key at https://platform.openai.com/api-keys
+api_key = "${OPENAI_API_KEY:-your_openai_key_here}"
+base_url = "${OPENAI_BASE_URL:-}"
+model_name = "gpt-4o-mini"
+
+[llm.moonshot]
+# Visit https://platform.moonshot.cn/console/api-keys to get your API key
+api_key = "${MOONSHOT_API_KEY:-}"
+base_url = "https://api.moonshot.cn/v1"
+model_name = "moonshot-v1-8k"
+
+[llm.azure]
+# Visit https://learn.microsoft.com/azure/ai-services/openai/ for details
+api_key = "${AZURE_API_KEY:-}"
+base_url = "${AZURE_BASE_URL:-}"
+model_name = "gpt-35-turbo"
+api_version = "2024-02-15-preview"
+
+[llm.gemini]
+# Get your API key from Google AI Studio
+api_key = "${GEMINI_API_KEY:-AIzaSyAp9IqLHulnWCCGIv8umVmobJqR917vTEw}"
+model_name = "gemini-2.5-pro"
+
+[llm.qwen]
+# Visit https://dashscope.console.aliyun.com/apiKey to get your API key
+api_key = "${QWEN_API_KEY:-}"
+model_name = "qwen-max"
+
+[llm.deepseek]
+# Visit https://platform.deepseek.com/api_keys to get your API key
+api_key = "${DEEPSEEK_API_KEY:-}"
+base_url = "https://api.deepseek.com"
+model_name = "deepseek-chat"
+
+[llm.ollama]
+# For local Ollama installations
+base_url = "${OLLAMA_BASE_URL:-}"
+model_name = "${OLLAMA_MODEL_NAME:-}"
+
+[llm.oneapi]
+# Visit https://github.com/songquanpeng/one-api for details
+api_key = "${ONEAPI_API_KEY:-}"
+base_url = "${ONEAPI_BASE_URL:-}"
+model_name = "${ONEAPI_MODEL_NAME:-}"
+
+[llm.g4f]
+# Visit https://github.com/xtekky/gpt4free for supported models
+model_name = "gpt-3.5-turbo"
+
+[llm.pollinations]
+# Visit https://pollinations.ai/ to learn more
+api_key = "${POLLINATIONS_API_KEY:-}"
+base_url = "https://pollinations.ai/api/v1"
+model_name = "openai-fast"
+
+# =============================================================================
+# TEXT-TO-SPEECH SERVICES
+# =============================================================================
+
+[tts.azure]
+# Azure Speech API Key
+# Get your API key at https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/SpeechServices
+speech_key = "${AZURE_SPEECH_KEY:-}"
+speech_region = "${AZURE_SPEECH_REGION:-}"
+
+[tts.gpt_sovits]
+# GPT-SoVITS Voice Synthesis Settings
+api_base_url = "http://localhost:9880"
+api_key = "${GPT_SOVITS_API_KEY:-}"
+timeout = 60
+models_dir = "models/gpt_sovits"
+
+# =============================================================================
+# OTHER AI SERVICES
+# =============================================================================
+
+[ai_services.siliconflow]
+# SiliconFlow API Key
+# Get your API key at https://siliconflow.cn
+api_key = "${SILICONFLOW_API_KEY:-}"
+
+[ai_services.elevenlabs]
+# ElevenLabs TTS API
+api_key = "${ELEVENLABS_API_KEY:-}"
+
+# =============================================================================
+# NETWORK & PROXY SETTINGS
+# =============================================================================
+
+[proxy]
+# Use a proxy to access external APIs
+# Format: "http://<username>:<password>@<proxy>:<port>"
+# Example: "http://user:pass@proxy:1234"
+# http = "${HTTP_PROXY:-}"
+# https = "${HTTPS_PROXY:-}"
+
+# =============================================================================
+# EXTERNAL AUTHENTICATION PROVIDERS
+# =============================================================================
+
+[auth.google]
+# Google Cloud Project Configuration
+project_id = "${GOOGLE_CLOUD_PROJECT_ID:-}"
+credentials_path = "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+
+[auth.supabase]
+# Supabase Authentication
+access_token = "${SUPABASE_ACCESS_TOKEN:-}"
+
+# =============================================================================
+# RATE LIMITING CONFIGURATION
+# =============================================================================
+
+[rate_limits]
+# API rate limits per provider (requests per minute)
+pexels_rpm = 200
+pixabay_rpm = 100
+openai_rpm = 60
+gemini_rpm = 100
+azure_tts_rpm = 200
+
+# Concurrent request limits
+max_concurrent_api_requests = 10
+request_timeout = 30
+
+# =============================================================================
+# FALLBACK STRATEGIES
+# =============================================================================
+
+[fallbacks]
+# LLM provider fallback order
+llm_providers = ["gemini", "openai", "azure", "g4f"]
+
+# Video source fallback order
+video_sources = ["pixabay", "pexels"]
+
+# TTS provider fallback order
+tts_providers = ["azure", "edge", "whisper"]
+
+# Retry configuration
+max_retries = 3
+retry_delay = 1
+exponential_backoff = true

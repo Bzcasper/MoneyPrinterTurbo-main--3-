@@ -25,6 +25,18 @@ async def lifespan(app: FastAPI):
         from app.database.migrations import check_database_status, migrate_database
         from app.database.connection import get_supabase_connection
 
+        # Patch httpx.Client to handle 'proxy' keyword argument
+        import httpx
+        def patched_init(self, *args, **kwargs):
+            if 'proxy' in kwargs:
+                proxy = kwargs.pop('proxy')
+                if proxy is not None:
+                    kwargs['proxies'] = proxy
+            self.__original_init__(*args, **kwargs)
+        if not hasattr(httpx.Client, '__original_init__'):
+            httpx.Client.__original_init__ = httpx.Client.__init__
+            httpx.Client.__init__ = patched_init
+
         # Ensure connection is established before checking status
         db_connection = get_supabase_connection()
         if not db_connection.is_connected:

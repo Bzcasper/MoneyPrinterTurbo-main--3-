@@ -1,0 +1,94 @@
+# MoneyPrinterTurbo - Application Configuration Template
+# Copy this file to config/app.toml and customize for your deployment
+
+[app]
+# Application Metadata
+title = "MoneyPrinterTurbo"
+version = "2.0.0"
+debug = false
+log_level = "INFO" # DEBUG, INFO, WARNING, ERROR
+
+# Video Generation Settings
+video_source = "pixabay" # Options: "pexels" or "pixabay"
+default_format = "youtube_shorts" # youtube_shorts, instagram_reels, tiktok, landscape, square
+default_duration = 30 # seconds (1-300)
+max_duration = 60 # seconds
+default_resolution = "1080x1920" # 1080x1920 for vertical, 1920x1080 for landscape
+max_concurrent_tasks = 5 # Adjust based on your system resources
+
+# User Interface
+hide_config = false # Hide configuration panel in UI
+hide_log = false # Hide logs in UI
+
+# Material Storage
+# Options:
+# "" = default folder (./storage/cache_videos)
+# "/path/to/folder" = custom absolute path
+# "task" = per-task folder (no sharing of materials)
+material_directory = ""
+
+# External endpoint for video downloads (optional)
+# Example: "https://yourdomain.com" for external access
+endpoint = ""
+
+[browser]
+# Disable usage statistics collection
+gatherUsageStats = false
+
+[video]
+# GPU Acceleration (requires compatible hardware)
+enable_gpu_acceleration = true
+
+# Subtitle Settings
+enable_auto_subtitles = true
+subtitle_font_size = 48
+subtitle_color = "white"
+subtitle_stroke_color = "black"
+subtitle_stroke_width = 2
+
+[tools]
+# System Tool Paths (auto-detected on most systems)
+imagemagick_path = "/usr/bin/convert" # Windows: "C:\\Program Files\\ImageMagick\\magick.exe"
+ffmpeg_path = "/usr/bin/ffmpeg" # Usually auto-detected
+
+[tts]
+# Text-to-Speech Provider
+subtitle_provider = "edge" # Options: "edge" (free) or "whisper" (requires model)
+
+[tts.whisper]
+# Whisper TTS Settings (only if subtitle_provider = "whisper")
+model_size = "large-v3" # Options: tiny, base, small, medium, large, large-v2, large-v3
+device = "CPU" # Options: "CPU" or "cuda" (for GPU)
+compute_type = "int8" # Options: int8, int8_float16, float16, float32
+
+[features]
+# Experimental Features (enable with caution)
+experimental_ai_avatars = false
+batch_processing = true
+multilingual_subtitles = true
+
+# Performance Features
+caching_enabled = true
+gpu_acceleration = true
+async_processing = true
+
+# UI Features
+advanced_editor = false
+real_time_preview = false
+template_library = true
+
+# Environment-Specific Settings
+[environments.development]
+debug = true
+log_level = "DEBUG"
+max_concurrent_tasks = 2
+
+[environments.production]
+debug = false
+log_level = "INFO"
+max_concurrent_tasks = 10
+
+[environments.testing]
+debug = true
+log_level = "DEBUG"
+max_concurrent_tasks = 1

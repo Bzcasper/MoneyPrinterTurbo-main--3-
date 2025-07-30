@@ -1,0 +1,95 @@
+# MoneyPrinterTurbo - Services Configuration Template
+# Copy this file to config/services.toml and add your API keys
+
+# =============================================================================
+# VIDEO SOURCE PROVIDERS
+# =============================================================================
+
+[video_sources.pexels]
+# Get your API key from: https://www.pexels.com/api/
+# Multiple keys help avoid rate limits: ["key1", "key2", "key3"]
+api_keys = ["your_pexels_key_here"]
+
+[video_sources.pixabay]
+# Get your API key from: https://pixabay.com/api/docs/
+# Multiple keys help avoid rate limits: ["key1", "key2", "key3"]
+api_keys = ["your_pixabay_key_here"]
+
+# =============================================================================
+# AI/LLM PROVIDERS
+# =============================================================================
+
+[llm]
+# Choose your primary LLM provider
+provider = "openai" # Options: openai, gemini, azure, claude, etc.
+
+[llm.openai]
+# Get your API key from: https://platform.openai.com/api-keys
+api_key = "your_openai_key_here"
+base_url = "" # Leave empty for default, or use proxy URL
+model_name = "gpt-4o-mini" # or "gpt-4", "gpt-3.5-turbo"
+
+[llm.gemini]
+# Get your API key from: https://aistudio.google.com/app/apikey
+api_key = "your_gemini_key_here"
+model_name = "gemini-2.5-pro" # or "gemini-1.5-pro", "gemini-1.5-flash"
+
+[llm.azure]
+# Azure OpenAI Service configuration
+api_key = "your_azure_key_here"
+base_url = "https://your-resource.openai.azure.com/"
+model_name = "gpt-35-turbo" # Your deployment name
+api_version = "2024-02-15-preview"
+
+[llm.claude]
+# Anthropic Claude API
+api_key = "your_claude_key_here"
+model_name = "claude-3-5-sonnet-20241022"
+
+# =============================================================================
+# TEXT-TO-SPEECH SERVICES
+# =============================================================================
+
+[tts.azure]
+# Azure Speech Service
+# Get keys from: https://portal.azure.com (Cognitive Services)
+speech_key = "your_azure_speech_key_here"
+speech_region = "eastus" # Your Azure region
+
+[tts.elevenlabs]
+# ElevenLabs TTS API
+# Get your API key from: https://elevenlabs.io/app/settings/api
+api_key = "your_elevenlabs_key_here"
+
+[tts.gpt_sovits]
+# Local GPT-SoVITS installation
+api_base_url = "http://localhost:9880"
+api_key = "" # Usually not required for local
+timeout = 60
+
+# =============================================================================
+# PROXY SETTINGS (OPTIONAL)
+# =============================================================================
+
+[proxy]
+# Configure if you need to use a proxy for API calls
+# Format: "http://username:password@proxy:port"
+# http = "http://proxy:8080"
+# https = "http://proxy:8080"
+
+# =============================================================================
+# RATE LIMITS & FALLBACKS
+# =============================================================================
+
+[rate_limits]
+# Adjust based on your API plan limits
+pexels_rpm = 200 # requests per minute
+pixabay_rpm = 100
+openai_rpm = 60
+gemini_rpm = 100
+
+[fallbacks]
+# Fallback order when primary services fail
+llm_providers = ["openai", "gemini", "azure"]
+video_sources = ["pixabay", "pexels"]
+tts_providers = ["azure", "edge", "elevenlabs"]
