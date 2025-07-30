@@ -41,11 +41,21 @@ def _generate_response(prompt: str) -> str:
                 if not base_url:
                     base_url = "http://localhost:11434/v1"
             elif llm_provider == "openai":
+                import os
+                logger.debug(f"DEBUG: config type: {type(config)}")
+                logger.debug(f"DEBUG: config.app type: {type(config.app)}")
+                logger.debug(f"DEBUG: config.app keys: {list(config.app.keys()) if hasattr(config.app, 'keys') else 'N/A'}")
+                logger.debug(f"DEBUG: config.app: {config.app}")
+                logger.debug(f"DEBUG: os.environ['OPENAI_API_KEY']: {os.environ.get('OPENAI_API_KEY')}")
                 api_key = config.app.get("openai_api_key")
+                logger.debug(f"DEBUG: api_key from config.app: {api_key}")
                 model_name = config.app.get("openai_model_name")
                 base_url = config.app.get("openai_base_url", "")
+                logger.debug(f"DEBUG: model_name: {model_name}")
+                logger.debug(f"DEBUG: base_url: {base_url}")
                 if not base_url:
                     base_url = "https://api.openai.com/v1"
+                logger.debug(f"DEBUG: final base_url: {base_url}")
             elif llm_provider == "oneapi":
                 api_key = config.app.get("oneapi_api_key")
                 model_name = config.app.get("oneapi_model_name")
