@@ -6,15 +6,15 @@ echo "=== MoneyPrinterTurbo Docker Deployment & Verification ==="
 # Step 1: Stop existing containers
 echo "1. Stopping existing containers..."
 cd /home/bobby/Downloads/moneyp/app
-docker-compose down
+docker compose down
 
 # Step 2: Rebuild images
 echo "2. Rebuilding Docker images..."
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Step 3: Start services
 echo "3. Starting services..."
-docker-compose up -d
+docker compose up -d
 
 # Step 4: Wait for services to be ready
 echo "4. Waiting for services to initialize..."
@@ -22,15 +22,15 @@ sleep 30
 
 # Step 5: Check container status
 echo "5. Checking container status..."
-docker-compose ps
+docker compose ps
 
 # Step 6: Check logs for errors
 echo "6. Checking recent logs..."
 echo "=== API Logs ==="
-docker-compose logs --tail=20 api
+docker compose logs --tail=20 api
 
 echo "=== WebUI Logs ==="
-docker-compose logs --tail=20 webui
+docker compose logs --tail=20 webui
 
 # Step 7: Test API endpoints
 echo "7. Testing API endpoints..."

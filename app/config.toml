@@ -6,26 +6,29 @@ video_source = "pixabay" # "pexels" or "pixabay"
 # Whether to hide the configuration panel
 hide_config = false
 
+[mcp]
 # MCP Server Configuration
-mcp_enabled = true
-mcp_server_host = "0.0.0.0"
-mcp_server_port = 8081
-mcp_max_connections = 100
-mcp_rate_limit_requests = 100
-mcp_rate_limit_window = 60
+enabled = true
+server_host = "0.0.0.0"
+server_port = 8081
+max_connections = 100
+rate_limit_requests = 100
+rate_limit_window = 60
 
 # MCP Authentication
-mcp_jwt_secret = "your-secret-key"
-mcp_jwt_expiration = 3600
+# SECURITY: Generate a secure JWT secret in production
+# Example: openssl rand -hex 32
+jwt_secret = "${JWT_SECRET:-your-secret-key-CHANGE-IN-PRODUCTION}"
+jwt_expiration = 3600
 
 # MCP Circuit Breaker
-mcp_circuit_breaker_threshold = 5
-mcp_circuit_breaker_timeout = 60
+circuit_breaker_threshold = 5
+circuit_breaker_timeout = 60
 
 # MCP Service Discovery
-mcp_heartbeat_interval = 30
-mcp_health_check_interval = 10
-mcp_service_timeout = 90
+heartbeat_interval = 30
+health_check_interval = 10
+service_timeout = 90
 
 # Pexels API Key
 # Register at https://www.pexels.com/api/ to get your API key.
@@ -254,7 +257,7 @@ subtitle_stroke_color = "black"
 subtitle_stroke_width = 2
 
 # MCP API Keys configuration
-[app.mcp_api_keys]
+[mcp.api_keys]
 admin_key = { name = "Admin User", role = "admin", active = true }
 user_key = { name = "Regular User", role = "user", active = true }
 

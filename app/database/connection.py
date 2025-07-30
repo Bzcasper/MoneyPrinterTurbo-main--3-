@@ -104,12 +104,13 @@ class SupabaseConnection:
         supabase_config = config_data.get("supabase", {})
         database_config = config_data.get("database", {})
 
-        supabase_url = supabase_config.get("url")
-        supabase_key = supabase_config.get("key")
-        supabase_service_key = supabase_config.get("service_role_key")
+        # Resolve environment variables in config values
+        supabase_url = self._resolve_env_variables(supabase_config.get("url"))
+        supabase_key = self._resolve_env_variables(supabase_config.get("key"))
+        supabase_service_key = self._resolve_env_variables(supabase_config.get("service_role_key"))
         
         # The database URL will now come from the [database] section
-        database_url = database_config.get("path")
+        database_url = self._resolve_env_variables(database_config.get("path"))
 
         if not supabase_url or not supabase_key:
             raise DatabaseConnectionError(
