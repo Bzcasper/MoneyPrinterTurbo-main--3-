@@ -1,0 +1,623 @@
+{
+  "app": {
+    "title": "MoneyPrinterTurbo with MCP",
+    "video_source": "pixabay",
+    "max_concurrent_tasks": 5,
+    "version": "2.0.0",
+    "debug": false,
+    "log_level": "INFO",
+    "default_format": "youtube_shorts",
+    "default_duration": 30,
+    "max_duration": 60,
+    "default_resolution": "1080x1920",
+    "hide_config": false,
+    "hide_log": false,
+    "material_directory": "",
+    "endpoint": ""
+  },
+  "database": {
+    "type": "postgresql",
+    "path": "${DATABASE_URL}",
+    "fallback_to_memory": false,
+    "pool_size": 10,
+    "min_connections": 2,
+    "max_connections": 20,
+    "timeout": 30,
+    "connection_timeout": 10,
+    "idle_timeout": 300,
+    "postgresql": {
+      "host": "${DB_HOST:-localhost}",
+      "port": "${DB_PORT:-5432}",
+      "database": "${DB_NAME:-moneyprinter}",
+      "username": "${DB_USER:-postgres}",
+      "password": "${DB_PASSWORD:-}",
+      "sslmode": "${DB_SSLMODE:-prefer}"
+    },
+    "sqlite": {
+      "path": "data/moneyprinter.db",
+      "journal_mode": "WAL",
+      "synchronous": "NORMAL"
+    }
+  },
+  "mcp": {
+    "enabled": true,
+    "server_port": 8081,
+    "jwt_secret": "${JWT_SECRET:-your-secret-key-CHANGE-IN-PRODUCTION}",
+    "server_host": "0.0.0.0",
+    "max_connections": 100,
+    "socket_timeout": 30,
+    "protocol_version": "2024-11-05",
+    "capabilities": [
+      "prompts",
+      "resources",
+      "tools",
+      "logging"
+    ],
+    "auth": {
+      "jwt_enabled": true,
+      "jwt_secret": "${JWT_SECRET:-your-secret-key-CHANGE-IN-PRODUCTION}",
+      "jwt_algorithm": "HS256",
+      "jwt_expiration": 3600,
+      "jwt_refresh_enabled": true,
+      "jwt_refresh_expiration": 86400,
+      "api_key_enabled": true,
+      "api_key_header": "X-API-Key",
+      "hmac_enabled": true,
+      "hmac_algorithm": "sha256",
+      "hmac_header": "X-HMAC-Signature",
+      "hmac_timestamp_header": "X-HMAC-Timestamp",
+      "hmac_tolerance": 300,
+      "mfa_enabled": false,
+      "mfa_issuer": "MoneyPrinterTurbo"
+    },
+    "api_keys": {
+      "admin_key": {
+        "name": "Admin User",
+        "role": "admin",
+        "active": true,
+        "created": "2024-01-01T00:00:00Z"
+      },
+      "user_key": {
+        "name": "Regular User",
+        "role": "user",
+        "active": true,
+        "created": "2024-01-01T00:00:00Z"
+      },
+      "viewer_key": {
+        "name": "Viewer User",
+        "role": "viewer",
+        "active": true,
+        "created": "2024-01-01T00:00:00Z"
+      }
+    },
+    "roles": {
+      "admin": {
+        "permissions": [
+          "read",
+          "write",
+          "delete",
+          "manage_users",
+          "system_config",
+          "view_logs"
+        ],
+        "rate_limit": 1000,
+        "rate_window": 60
+      },
+      "user": {
+        "permissions": [
+          "read",
+          "write",
+          "create_videos",
+          "manage_own_content"
+        ],
+        "rate_limit": 100,
+        "rate_window": 60
+      },
+      "viewer": {
+        "permissions": [
+          "read",
+          "view_content"
+        ],
+        "rate_limit": 50,
+        "rate_window": 60
+      }
+    },
+    "hmac_clients": {
+      "client_001": "${HMAC_CLIENT_001_SECRET:-hmac_secret_for_client_001}",
+      "client_002": "${HMAC_CLIENT_002_SECRET:-hmac_secret_for_client_002}",
+      "client_003": "${HMAC_CLIENT_003_SECRET:-hmac_secret_for_client_003}"
+    },
+    "client_roles": {
+      "client_001": "admin",
+      "client_002": "user",
+      "client_003": "viewer"
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "requests_per_hour": 1000,
+      "requests_per_day": 10000,
+      "endpoints": {
+        "/api/v1/generate": {
+          "rpm": 10,
+          "rph": 100
+        },
+        "/api/v1/upload": {
+          "rpm": 5,
+          "rph": 50
+        },
+        "/api/v1/status": {
+          "rpm": 60,
+          "rph": 600
+        },
+        "storage_backend": "redis",
+        "cleanup_interval": 3600
+      }
+    },
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 5,
+      "success_threshold": 3,
+      "timeout": 60,
+      "request_volume_threshold": 20,
+      "error_threshold_percentage": 50,
+      "sleep_window": 30
+    },
+    "service_discovery": {
+      "enabled": true,
+      "service_name": "moneyprinter-mcp",
+      "service_version": "2.0.0",
+      "service_tags": [
+        "mcp",
+        "video",
+        "ai"
+      ],
+      "heartbeat_interval": 30,
+      "health_check_interval": 10,
+      "service_timeout": 90,
+      "registry_type": "consul",
+      "registry_url": "${SERVICE_REGISTRY_URL:-http://localhost:8500}"
+    },
+    "messaging": {
+      "events_enabled": true,
+      "event_bus": "redis",
+      "queue_enabled": true,
+      "queue_backend": "redis",
+      "default_queue": "mcp_tasks",
+      "pubsub_enabled": true,
+      "pubsub_channels": [
+        "system_events",
+        "user_actions",
+        "video_generation"
+      ]
+    },
+    "caching": {
+      "enabled": true,
+      "default_ttl": 300,
+      "max_cache_size": "100MB",
+      "strategies": {
+        "prompts": {
+          "ttl": 3600,
+          "max_size": "10MB"
+        },
+        "resources": {
+          "ttl": 1800,
+          "max_size": "50MB"
+        },
+        "tools": {
+          "ttl": 600,
+          "max_size": "20MB"
+        }
+      }
+    },
+    "logging": {
+      "level": "INFO",
+      "format": "structured",
+      "include_request_id": true,
+      "include_client_info": true,
+      "log_requests": true,
+      "log_responses": false,
+      "log_slow_queries": true,
+      "slow_query_threshold": 1000,
+      "debug_mode": false,
+      "trace_enabled": false,
+      "profile_enabled": false
+    },
+    "security": {
+      "validate_requests": true,
+      "max_request_size": "10MB",
+      "timeout_seconds": 30,
+      "sanitize_inputs": true,
+      "escape_outputs": true,
+      "validate_json_schema": true,
+      "tls_enabled": false,
+      "cert_file": "${MCP_TLS_CERT_FILE:-}",
+      "key_file": "${MCP_TLS_KEY_FILE:-}",
+      "ca_file": "${MCP_TLS_CA_FILE:-}",
+      "cors_enabled": true,
+      "cors_origins": [
+        "*"
+      ],
+      "cors_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "cors_headers": [
+        "Content-Type",
+        "Authorization",
+        "X-API-Key",
+        "X-HMAC-Signature"
+      ]
+    },
+    "websocket": {
+      "enabled": true,
+      "max_connections": 1000,
+      "ping_interval": 30,
+      "ping_timeout": 10,
+      "max_message_size": "1MB",
+      "idle_timeout": 300,
+      "heartbeat_enabled": true,
+      "reconnect_enabled": true,
+      "max_reconnect_attempts": 5
+    },
+    "integrations": {
+      "claude_enabled": true,
+      "claude_models": [
+        "claude-3-5-sonnet-20241022",
+        "claude-3-haiku-20240307"
+      ],
+      "openai_enabled": true,
+      "openai_models": [
+        "gpt-4",
+        "gpt-3.5-turbo"
+      ],
+      "custom_tools_enabled": true,
+      "custom_tools_path": "mcp/tools",
+      "custom_tools_reload": true
+    },
+    "monitoring": {
+      "metrics_enabled": true,
+      "metrics_port": 9091,
+      "metrics_path": "/mcp/metrics",
+      "track_request_duration": true,
+      "track_queue_sizes": true,
+      "track_cache_hit_rates": true,
+      "track_error_rates": true,
+      "custom": {
+        "video_generation_count": {
+          "type": "counter",
+          "description": "Total videos generated"
+        },
+        "api_response_time": {
+          "type": "histogram",
+          "description": "API response times"
+        },
+        "active_connections": {
+          "type": "gauge",
+          "description": "Active MCP connections"
+        }
+      }
+    }
+  },
+  "llm": {
+    "provider": "gemini",
+    "openai": {
+      "api_key": "your_openai_key_here",
+      "base_url": "${OPENAI_BASE_URL:-}",
+      "model_name": "gpt-4o-mini"
+    },
+    "gemini": {
+      "api_key": "${GEMINI_API_KEY:-your_gemini_key_here}",
+      "model_name": "gemini-2.5-pro"
+    },
+    "moonshot": {
+      "api_key": "${MOONSHOT_API_KEY:-}",
+      "base_url": "https://api.moonshot.cn/v1",
+      "model_name": "moonshot-v1-8k"
+    },
+    "azure": {
+      "api_key": "${AZURE_API_KEY:-}",
+      "base_url": "${AZURE_BASE_URL:-}",
+      "model_name": "gpt-35-turbo",
+      "api_version": "2024-02-15-preview"
+    },
+    "qwen": {
+      "api_key": "${QWEN_API_KEY:-}",
+      "model_name": "qwen-max"
+    },
+    "deepseek": {
+      "api_key": "${DEEPSEEK_API_KEY:-}",
+      "base_url": "https://api.deepseek.com",
+      "model_name": "deepseek-chat"
+    },
+    "ollama": {
+      "base_url": "${OLLAMA_BASE_URL:-}",
+      "model_name": "${OLLAMA_MODEL_NAME:-}"
+    },
+    "oneapi": {
+      "api_key": "${ONEAPI_API_KEY:-}",
+      "base_url": "${ONEAPI_BASE_URL:-}",
+      "model_name": "${ONEAPI_MODEL_NAME:-}"
+    },
+    "g4f": {
+      "model_name": "gpt-3.5-turbo"
+    },
+    "pollinations": {
+      "api_key": "${POLLINATIONS_API_KEY:-}",
+      "base_url": "https://pollinations.ai/api/v1",
+      "model_name": "openai-fast"
+    }
+  },
+  "browser": {
+    "gatherUsageStats": false
+  },
+  "video": {
+    "enable_gpu_acceleration": true,
+    "enable_auto_subtitles": true,
+    "subtitle_font_size": 48,
+    "subtitle_color": "white",
+    "subtitle_stroke_color": "black",
+    "subtitle_stroke_width": 2
+  },
+  "tools": {
+    "imagemagick_path": "/usr/bin/convert",
+    "ffmpeg_path": "/usr/bin/ffmpeg"
+  },
+  "tts": {
+    "subtitle_provider": "edge",
+    "whisper": {
+      "model_size": "large-v3",
+      "device": "CPU",
+      "compute_type": "int8"
+    },
+    "azure": {
+      "speech_key": "${AZURE_SPEECH_KEY:-}",
+      "speech_region": "${AZURE_SPEECH_REGION:-}"
+    },
+    "gpt_sovits": {
+      "api_base_url": "http://localhost:9880",
+      "api_key": "${GPT_SOVITS_API_KEY:-}",
+      "timeout": 60,
+      "models_dir": "models/gpt_sovits"
+    }
+  },
+  "features": {
+    "experimental_ai_avatars": false,
+    "batch_processing": true,
+    "multilingual_subtitles": true,
+    "caching_enabled": true,
+    "gpu_acceleration": true,
+    "async_processing": true,
+    "advanced_editor": false,
+    "real_time_preview": false,
+    "template_library": true
+  },
+  "environments": {
+    "development": {
+      "debug": true,
+      "log_level": "DEBUG",
+      "max_concurrent_tasks": 2
+    },
+    "production": {
+      "debug": false,
+      "log_level": "INFO",
+      "max_concurrent_tasks": 10
+    },
+    "testing": {
+      "debug": true,
+      "log_level": "DEBUG",
+      "max_concurrent_tasks": 1
+    }
+  },
+  "video_sources": {
+    "pexels": {
+      "api_keys": [
+        "${PEXELS_API_KEY:-your_pexels_key_here}"
+      ]
+    },
+    "pixabay": {
+      "api_keys": [
+        "${PIXABAY_API_KEY:-your_pixabay_key_here}"
+      ]
+    }
+  },
+  "ai_services": {
+    "siliconflow": {
+      "api_key": "${SILICONFLOW_API_KEY:-}"
+    },
+    "elevenlabs": {
+      "api_key": "${ELEVENLABS_API_KEY:-}"
+    }
+  },
+  "proxy": {},
+  "auth": {
+    "google": {
+      "project_id": "${GOOGLE_CLOUD_PROJECT_ID:-}",
+      "credentials_path": "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+    },
+    "supabase": {
+      "access_token": "${SUPABASE_ACCESS_TOKEN:-}"
+    }
+  },
+  "rate_limits": {
+    "pexels_rpm": 200,
+    "pixabay_rpm": 100,
+    "openai_rpm": 60,
+    "gemini_rpm": 100,
+    "azure_tts_rpm": 200,
+    "max_concurrent_api_requests": 10,
+    "request_timeout": 30
+  },
+  "fallbacks": {
+    "llm_providers": [
+      "gemini",
+      "openai",
+      "azure",
+      "g4f"
+    ],
+    "video_sources": [
+      "pixabay",
+      "pexels"
+    ],
+    "tts_providers": [
+      "azure",
+      "edge",
+      "whisper"
+    ],
+    "max_retries": 3,
+    "retry_delay": 1,
+    "exponential_backoff": true
+  },
+  "supabase": {
+    "url": "${SUPABASE_URL}",
+    "anon_key": "${SUPABASE_ANON_KEY}",
+    "service_role_key": "${SUPABASE_SERVICE_ROLE_KEY}",
+    "timeout": 30,
+    "max_retries": 3,
+    "pool_size": 10
+  },
+  "redis": {
+    "enabled": true,
+    "host": "${REDIS_HOST:-redis}",
+    "port": "${REDIS_PORT:-6379}",
+    "db": "${REDIS_DB:-0}",
+    "password": "${REDIS_PASSWORD:-}",
+    "max_connections": 50,
+    "socket_timeout": 30,
+    "socket_connect_timeout": 30,
+    "cluster_enabled": false,
+    "cluster_nodes": []
+  },
+  "storage": {
+    "backend": "local",
+    "local": {
+      "base_path": "storage",
+      "temp_path": "storage/temp",
+      "cache_path": "storage/cache",
+      "max_file_size": "100MB"
+    },
+    "s3": {
+      "access_key_id": "${AWS_ACCESS_KEY_ID}",
+      "secret_access_key": "${AWS_SECRET_ACCESS_KEY}",
+      "bucket_name": "${AWS_BUCKET_NAME}",
+      "region": "${AWS_REGION:-us-east-1}",
+      "endpoint_url": "${AWS_ENDPOINT_URL:-}"
+    },
+    "gcs": {
+      "bucket_name": "${GCS_BUCKET_NAME}",
+      "credentials_path": "${GCS_CREDENTIALS_PATH}",
+      "project_id": "${GCS_PROJECT_ID}"
+    },
+    "azure_blob": {
+      "account_name": "${AZURE_STORAGE_ACCOUNT_NAME}",
+      "account_key": "${AZURE_STORAGE_ACCOUNT_KEY}",
+      "container_name": "${AZURE_STORAGE_CONTAINER_NAME}"
+    }
+  },
+  "docker": {
+    "registry": "${DOCKER_REGISTRY:-}",
+    "namespace": "${DOCKER_NAMESPACE:-moneyprinter}",
+    "tag": "${DOCKER_TAG:-latest}",
+    "memory_limit": "2g",
+    "cpu_limit": "1",
+    "restart_policy": "unless-stopped",
+    "network_mode": "bridge",
+    "expose_ports": [
+      "8501",
+      "8080",
+      "8081"
+    ]
+  },
+  "deployment": {
+    "environment": "${DEPLOYMENT_ENV:-development}",
+    "health_check_path": "/health",
+    "health_check_interval": "30s",
+    "health_check_timeout": "10s",
+    "health_check_retries": 3,
+    "min_replicas": 1,
+    "max_replicas": 5,
+    "target_cpu_utilization": 70
+  },
+  "monitoring": {
+    "enable_metrics": true,
+    "metrics_port": 9090,
+    "metrics_path": "/metrics",
+    "health_check_endpoint": "/health",
+    "ready_check_endpoint": "/ready",
+    "liveness_check_endpoint": "/live",
+    "apm_enabled": false,
+    "apm_service_name": "moneyprinter-turbo",
+    "apm_environment": "${DEPLOYMENT_ENV:-development}"
+  },
+  "logging": {
+    "level": "${LOG_LEVEL:-INFO}",
+    "format": "structured",
+    "timestamp_format": "iso",
+    "file_enabled": true,
+    "file_path": "logs/app.log",
+    "max_file_size": "10MB",
+    "backup_count": 5,
+    "rotation": "daily",
+    "console_enabled": true,
+    "console_format": "simple",
+    "external": {
+      "sentry_enabled": false,
+      "sentry_dsn": "${SENTRY_DSN:-}",
+      "sentry_environment": "${DEPLOYMENT_ENV:-development}",
+      "elasticsearch_enabled": false,
+      "elasticsearch_url": "${ELASTICSEARCH_URL:-}",
+      "elasticsearch_index": "moneyprinter-logs"
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "schedule": "0 2 * * *",
+    "retention_days": 30,
+    "backup_path": "backups/database",
+    "storage_backup_enabled": false,
+    "storage_backup_schedule": "0 3 * * 0",
+    "storage_retention_days": 90
+  },
+  "cache": {
+    "enabled": true,
+    "default_ttl": 300,
+    "max_size": "100MB",
+    "layers": {
+      "memory_enabled": true,
+      "memory_size": "50MB",
+      "redis_enabled": true,
+      "redis_ttl": 3600,
+      "file_enabled": true,
+      "file_path": "storage/cache",
+      "file_ttl": 86400
+    }
+  },
+  "security": {
+    "max_file_size": "100MB",
+    "allowed_extensions": [
+      "mp4",
+      "avi",
+      "mov",
+      "wmv",
+      "png",
+      "jpg",
+      "jpeg",
+      "gif"
+    ],
+    "scan_uploads": true,
+    "allowed_origins": [
+      "*"
+    ],
+    "cors_enabled": true,
+    "csrf_protection": true,
+    "rate_limit_enabled": true,
+    "rate_limit_requests": 100,
+    "rate_limit_window": 60,
+    "session_timeout": 3600,
+    "secure_cookies": true,
+    "same_site_cookies": "strict"
+  }
+}

@@ -43,6 +43,17 @@ def save_config():
 
 _cfg = load_config()
 app = _cfg.get("app", {})
+
+# CRITICAL FIX: Merge all app-level configs from different sections
+# Some configs are under [app] section, others are at root level in [app]
+# This ensures all LLM provider configs are available in config.app
+if "llm_provider" not in app and "llm_provider" in _cfg.get("app", {}):
+    # Update app dict with all app-level configs from the full config
+    app.update(_cfg.get("app", {}))
+
+# Also merge any root-level app configs that might be missing
+root_app_configs = {k: v for k, v in _cfg.items() if k.startswith(('llm_', 'openai_', 'gemini_', 'azure_', 'moonshot_', 'qwen_', 'deepseek_', 'g4f_', 'oneapi_', 'cloudflare_', 'ernie_', 'pollinations_', 'ollama_'))}
+app.update(root_app_configs)
 whisper = _cfg.get("whisper", {})
 proxy = _cfg.get("proxy", {})
 azure = _cfg.get("azure", {})

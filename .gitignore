@@ -93,7 +93,14 @@ venv.bak/
 .env
 .env.*
 !.env.example
+!.env.template
 credentials.env
+
+# Configuration files with secrets (keep templates)
+config.toml.local
+config.toml.production
+*.secret.toml
+*_secrets.toml
 /config.toml
 config.mcp.toml
 

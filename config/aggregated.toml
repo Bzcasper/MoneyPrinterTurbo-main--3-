@@ -43,7 +43,7 @@ gatherUsageStats = false
 api_keys = ["your_pexels_key_here"]
 
 [video_sources.pixabay]
-api_keys = ["46693365-cf8143b99556595ef68972852"]
+api_keys = ["${PIXABAY_API_KEY:-your_pixabay_key_here}"]
 
 # Large Language Model Providers
 [llm]
@@ -66,7 +66,7 @@ model_name = "gpt-35-turbo"
 api_version = "2024-02-15-preview"
 
 [llm.gemini]
-api_key = "AIzaSyAp9IqLHulnWCCGIv8umVmobJqR917vTEw"
+api_key = "${GEMINI_API_KEY:-your_gemini_key_here}"
 model_name = "gemini-2.5-pro"
 
 [llm.qwen]

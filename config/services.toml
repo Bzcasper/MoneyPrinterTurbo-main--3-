@@ -15,7 +15,7 @@ api_keys = ["${PEXELS_API_KEY:-your_pexels_key_here}"]
 # Register at https://pixabay.com/api/docs/ to get your API key
 # Multiple keys can be used to avoid rate limits
 # Format: ["key1", "key2", "key3"]
-api_keys = ["${PIXABAY_API_KEY:-46693365-cf8143b99556595ef68972852}"]
+api_keys = ["${PIXABAY_API_KEY:-your_pixabay_key_here}"]
 
 # =============================================================================
 # LARGE LANGUAGE MODEL PROVIDERS
@@ -47,7 +47,7 @@ api_version = "2024-02-15-preview"
 
 [llm.gemini]
 # Get your API key from Google AI Studio
-api_key = "${GEMINI_API_KEY:-AIzaSyAp9IqLHulnWCCGIv8umVmobJqR917vTEw}"
+api_key = "${GEMINI_API_KEY:-your_gemini_key_here}"
 model_name = "gemini-2.5-pro"
 
 [llm.qwen]

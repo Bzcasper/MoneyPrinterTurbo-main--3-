@@ -42,7 +42,7 @@ pexels_api_keys = ["your_pexels_key_here"]
 # You can use multiple keys to avoid rate limits.
 # For example: pixabay_api_keys = ["123adsf4567adf89","abd1321cd13efgfdfhi"]
 # Please pay attention to the format: Keys must be enclosed in double quotes, multiple keys separated by commas
-pixabay_api_keys = ["46693365-cf8143b99556595ef68972852"]
+pixabay_api_keys = ["${PIXABAY_API_KEY:-your_pixabay_key_here}"]
 
 # Supported providers:
 #   openai
@@ -107,7 +107,7 @@ azure_model_name = "gpt-35-turbo"        # replace with your model deployment na
 azure_api_version = "2024-02-15-preview"
 
 ########## Gemini API Key
-gemini_api_key = "AIzaSyAp9IqLHulnWCCGIv8umVmobJqR917vTEw"
+gemini_api_key = "${GEMINI_API_KEY:-your_gemini_key_here}"
 gemini_model_name = "gemini-2.5-pro"
 
 ########## Qwen API Key
