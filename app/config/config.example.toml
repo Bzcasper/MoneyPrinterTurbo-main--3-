@@ -26,7 +26,6 @@ pixabay_api_keys = []
 #   deepseek
 #   gemini
 #   ollama
-#   g4f
 #   oneapi
 #   cloudflare
 #   ernie
@@ -66,11 +65,6 @@ moonshot_model_name = "moonshot-v1-8k"
 oneapi_api_key = ""
 oneapi_base_url = ""
 oneapi_model_name = ""
-
-########## G4F
-# Visit https://github.com/xtekky/gpt4free to get more details
-# Supported model list: https://github.com/xtekky/gpt4free/blob/main/g4f/models.py
-g4f_model_name = "gpt-3.5-turbo"
 
 ########## Azure API Key
 # Visit https://learn.microsoft.com/en-us/azure/ai-services/openai/ to get more details

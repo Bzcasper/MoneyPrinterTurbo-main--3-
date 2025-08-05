@@ -211,9 +211,6 @@ class SupabaseMiddleware(BaseHTTPMiddleware):
         if path in public_routes:
             return False
         
-        # Skip auth for health endpoints
-        if "health" in path.lower():
-            return False
             
         # All other routes require auth by default
         return True
