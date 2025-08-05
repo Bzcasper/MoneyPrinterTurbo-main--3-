@@ -1,6 +1,6 @@
-# Core Web Framework
-fastapi==0.104.1
-uvicorn==0.24.0
+# Core Web Framework - Updated for Python 3.13 compatibility
+fastapi>=0.108.0
+uvicorn>=0.25.0
 
 # Environment & Configuration
 python-dotenv==1.0.0
@@ -12,14 +12,14 @@ supabase
 
 # Async Support & HTTP
 aiohttp
-httpx==0.24.1
+httpx>=0.26.0
 asyncio-mqtt==0.16.1
 
-# Data Validation & Utilities
-pydantic<2.0
+# Data Validation & Utilities - Updated for Python 3.13
+pydantic>=2.5.0
 validators==0.22.0
 email-validator==2.1.0
-typing-extensions==4.8.0
+typing-extensions>=4.9.0
 
 # Form Data Support
 python-multipart==0.0.6
@@ -37,16 +37,15 @@ rich==13.7.0
 streamlit
 
 # LLM Dependencies
-g4f
 openai
 
 # Media Processing
 moviepy>=1.0.3
-Pillow>=9.0.0
-opencv-python>=4.5.0
+Pillow>=10.0.0
+opencv-python>=4.8.0
 pydub>=0.25.0
-imageio>=2.19.0
-imageio-ffmpeg>=0.4.7
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
 
 # Google Cloud Dependencies
 google-cloud-texttospeech>=2.14.0
@@ -55,23 +54,23 @@ google-auth>=2.0.0
 
 # Core Utilities
 requests>=2.31.0
-numpy>=1.21.0
-scipy>=1.7.0
+numpy>=1.24.0
+scipy>=1.11.0
 psutil
 
 # MCP Integration
-websockets==12.0
+websockets>=12.0
 
 # Audio Processing
 edge_tts
 
 # Testing Dependencies (optional)
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-mock==3.12.0
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+pytest-mock>=3.12.0
 
 # Development Dependencies (optional)
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
+black>=23.11.0
+flake8>=6.1.0
+mypy>=1.7.1
 faster_whisper

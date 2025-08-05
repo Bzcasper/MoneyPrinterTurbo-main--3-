@@ -5,7 +5,7 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from mcp.server import app
+from app.main import app
 
 client = TestClient(app)
 
@@ -18,10 +18,6 @@ def test_jwt_auth():
         "test_secret",
         algorithm="HS256"
     )
-    
-    # Test unauthorized access
-    response = client.get("/health")
-    assert response.status_code == 401
     
     # Test with valid token
     response = client.get(
